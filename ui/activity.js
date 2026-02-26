@@ -283,7 +283,10 @@ function bindEvents() {
   });
 
   openSettingsButton?.addEventListener("click", () => {
-    chrome.runtime.openOptionsPage();
+    const surface = bodyElement.dataset.surface === "panel" ? "panel" : "full";
+    chrome.runtime.sendMessage({ type: "open-settings", surface }).catch((error) => {
+      console.error("Open settings failed", error);
+    });
   });
 
   expandDashboardButton?.addEventListener("click", async () => {

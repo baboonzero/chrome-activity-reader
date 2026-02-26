@@ -45,6 +45,10 @@ function getDashboardUrl() {
   return chrome.runtime.getURL("ui/dashboard.html");
 }
 
+function getSettingsUrl() {
+  return chrome.runtime.getURL("ui/settings.html");
+}
+
 function isTrackableTab(tab) {
   if (!tab || typeof tab.id !== "number" || typeof tab.windowId !== "number") {
     return false;
@@ -547,6 +551,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     chrome.tabs.create({ url: getDashboardUrl() });
     sendResponse({ ok: true });
     return false;
+  }
+
+  if (message?.type === "open-settings") {
+    if (message.surface === "full" && typeof _sender?.tab?.id === "number") {
+      chrome.tabs
+        .update(_sender.tab.id, { url: getSettingsUrl() })
+        .then(() => sendResponse({ ok: true, mode: "same_tab" }))
+        .catch((error) => sendResponse({ ok: false, error: String(error) }));
+      return true;
+    }
+
+    chrome.runtime
+      .openOptionsPage()
+      .then(() => sendResponse({ ok: true, mode: "options_page" }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
   }
 
   if (message?.type === "open-side-panel") {

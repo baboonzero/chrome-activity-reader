@@ -196,7 +196,7 @@ test("all tabs view includes never-focused and focuses existing tab", async ({ p
   expect(calls.some((item) => item.api === "tabs.update")).toBeTruthy();
 });
 
-test("most recent view handles navigation actions and settings", async ({ page }) => {
+test("most recent view handles navigation actions and routes settings through runtime", async ({ page }) => {
   const now = Date.now();
   const activities = [
     makeActivity({
@@ -227,6 +227,62 @@ test("most recent view handles navigation actions and settings", async ({ page }
   expect(
     calls.some((item) => item.api === "tabs.create" && item.options?.url === "https://example.com/closed")
   ).toBeTruthy();
-  expect(calls.some((item) => item.api === "runtime.openOptionsPage")).toBeTruthy();
+  expect(
+    calls.some(
+      (item) =>
+        item.api === "runtime.sendMessage" &&
+        item.message?.type === "open-settings" &&
+        item.message?.surface === "full"
+    )
+  ).toBeTruthy();
   expect(calls.some((item) => item.api === "runtime.sendMessage" && item.message?.type === "open-side-panel")).toBeTruthy();
+});
+
+test("settings theme select maintains readable contrast in dark and light modes", async ({ page }) => {
+  await page.goto("/ui/settings.html");
+
+  const contrastRatios = await page.evaluate(() => {
+    const parseRgb = (value) => {
+      const matches = String(value).match(/\d+(\.\d+)?/g);
+      if (!matches || matches.length < 3) {
+        return [0, 0, 0];
+      }
+      return matches.slice(0, 3).map((part) => Number(part));
+    };
+
+    const luminance = ([r, g, b]) => {
+      const toLinear = (channel) => {
+        const value = channel / 255;
+        if (value <= 0.03928) {
+          return value / 12.92;
+        }
+        return ((value + 0.055) / 1.055) ** 2.4;
+      };
+
+      return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    };
+
+    const getRatio = () => {
+      const select = document.querySelector("#theme");
+      const styles = window.getComputedStyle(select);
+      const fg = parseRgb(styles.color);
+      const bg = parseRgb(styles.backgroundColor);
+      const l1 = luminance(fg);
+      const l2 = luminance(bg);
+      const lighter = Math.max(l1, l2);
+      const darker = Math.min(l1, l2);
+      return (lighter + 0.05) / (darker + 0.05);
+    };
+
+    const darkRatio = getRatio();
+    const themeSelect = document.querySelector("#theme");
+    themeSelect.value = "light";
+    themeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    const lightRatio = getRatio();
+
+    return { darkRatio, lightRatio };
+  });
+
+  expect(contrastRatios.darkRatio).toBeGreaterThanOrEqual(4.5);
+  expect(contrastRatios.lightRatio).toBeGreaterThanOrEqual(4.5);
 });

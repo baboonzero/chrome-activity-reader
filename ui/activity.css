@@ -151,29 +151,16 @@ body[data-surface="panel"] .hero {
 .brand-mark {
   width: 42px;
   height: 42px;
-  position: relative;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--accent), var(--accent-strong));
-  box-shadow: 0 0 0 3px var(--accent-soft), 0 10px 20px rgba(0, 0, 0, 0.24);
+  display: grid;
+  place-items: center;
 }
 
-.brand-mark .ring {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.brand-mark .ring-b {
-  inset: -10px;
-  opacity: 0.55;
-}
-
-.brand-mark .pulse {
-  position: absolute;
-  inset: 14px;
-  border-radius: 50%;
-  background: rgba(2, 7, 23, 0.45);
+.brand-mark img {
+  width: 42px;
+  height: 42px;
+  display: block;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
 }
 
 h1 {

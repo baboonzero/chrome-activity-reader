@@ -39,13 +39,51 @@
         border: 1px solid var(--border);
         padding: 9px 12px;
         color: var(--ink);
-        background: rgba(0, 0, 0, 0.12);
         font: inherit;
       }
 
-      body[data-theme="light"] textarea,
-      body[data-theme="light"] select {
+      textarea {
+        background: rgba(0, 0, 0, 0.12);
+      }
+
+      select {
+        appearance: none;
+        padding-right: 34px;
+        background-repeat: no-repeat;
+        background-position:
+          calc(100% - 17px) calc(50% - 2px),
+          calc(100% - 12px) calc(50% - 2px);
+        background-size: 5px 5px, 5px 5px;
+      }
+
+      body[data-theme="dark"] select {
+        color: #ecf2ff;
+        background-color: #121f3f;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #97a6cb 50%),
+          linear-gradient(135deg, #97a6cb 50%, transparent 50%);
+      }
+
+      body[data-theme="dark"] select option {
+        color: #ecf2ff;
+        background: #121f3f;
+      }
+
+      body[data-theme="light"] textarea {
         background: rgba(255, 255, 255, 0.86);
+      }
+
+      body[data-theme="light"] select {
+        color: #0d1531;
+        background-color: #ffffff;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #4f5a7f 50%),
+          linear-gradient(135deg, #4f5a7f 50%, transparent 50%);
+      }
+
+      body[data-theme="light"] select option {
+        color: #0d1531;
+        background: #ffffff;
       }
 
       textarea {
@@ -77,9 +115,7 @@
       <header class="hero">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true">
-            <span class="ring ring-a"></span>
-            <span class="ring ring-b"></span>
-            <span class="pulse"></span>
+            <img src="../assets/icons/icon-48.png" alt="" />
           </div>
           <div>
             <h1>Settings</h1>

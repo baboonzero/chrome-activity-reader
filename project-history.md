@@ -167,6 +167,15 @@ Chronological execution log:
     - switched native side-panel behavior to `openPanelOnActionClick: true`
     - extended smoke assertions to require side-panel API availability and configured action-click behavior
 
+31. Fixed post-release UI consistency and settings workflow regressions:
+    - replaced synthetic hero badge with app icon asset on dashboard/panel/settings headers
+    - corrected dashboard tagline copy to present tense ("Surface what matters")
+    - fixed dark-mode settings dropdown contrast (readable select + option colors)
+    - changed full-dashboard Settings action to open settings in the same tab via runtime message routing
+    - extended automated coverage:
+      - e2e test for theme select contrast in dark/light
+      - smoke assertions for same-tab settings routing and cross-page theme sync
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
