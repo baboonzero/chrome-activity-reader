@@ -1,0 +1,18 @@
+{
+  "name": "chrome-activity-reader",
+  "version": "1.0.0",
+  "description": "Chrome extension MVP that tracks tab-level activity and shows what you worked on over the last 1 hour, 4 hours, 1 day, and 7 days.",
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "http-server": "^14.1.1"
+  }
+}

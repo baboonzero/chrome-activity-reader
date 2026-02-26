@@ -25,6 +25,15 @@ Chrome extension MVP that tracks tab-level activity and shows what you worked on
 - Click extension icon to open dashboard.
 - Open Options from extension details page to manage settings.
 
+## Test Loop (Playwright)
+
+1. Install dependencies:
+   - `npm install`
+2. Install browser binaries:
+   - `npx playwright install chromium`
+3. Run end-to-end tests:
+   - `npm run test:e2e`
+
 ## Notes
 
 - MVP tracks tab/window focus activity only.
