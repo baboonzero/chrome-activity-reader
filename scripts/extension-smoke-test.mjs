@@ -26,15 +26,21 @@ async function run() {
     const extensionId = new URL(serviceWorker.url()).host;
     const dashboardUrl = `chrome-extension://${extensionId}/ui/dashboard.html`;
     const settingsUrl = `chrome-extension://${extensionId}/ui/settings.html`;
+    const panelUrl = `chrome-extension://${extensionId}/ui/panel.html`;
 
     const dashboardPage = await context.newPage();
     await dashboardPage.goto(dashboardUrl, { waitUntil: "domcontentloaded" });
 
     const heading = await dashboardPage.textContent("h1");
-    const timelineCount = await dashboardPage.locator("#timeline").count();
+    const activityListCount = await dashboardPage.locator("#activity-list").count();
+    const defaultViewActive = await dashboardPage.locator('[data-view="meaningful"].active').count();
     const status = await dashboardPage.evaluate(async () =>
       chrome.runtime.sendMessage({ type: "get-runtime-status" })
     );
+
+    const panelPage = await context.newPage();
+    await panelPage.goto(panelUrl, { waitUntil: "domcontentloaded" });
+    const panelViewCount = await panelPage.locator('[data-view]').count();
 
     const settingsPage = await context.newPage();
     await settingsPage.goto(settingsUrl, { waitUntil: "domcontentloaded" });
@@ -43,7 +49,9 @@ async function run() {
     const result = {
       extensionId,
       dashboardHeading: heading,
-      timelinePresent: timelineCount > 0,
+      activityListPresent: activityListCount > 0,
+      defaultViewActive: defaultViewActive > 0,
+      panelViewToggleCount: panelViewCount,
       runtimeStatusOk: status?.ok === true,
       retentionDays: status?.retentionDays,
       paused: status?.paused,
@@ -54,7 +62,9 @@ async function run() {
 
     if (
       result.dashboardHeading !== "Chrome Activity Reader" ||
-      !result.timelinePresent ||
+      !result.activityListPresent ||
+      !result.defaultViewActive ||
+      result.panelViewToggleCount < 3 ||
       result.runtimeStatusOk !== true ||
       result.settingsHeading !== "Settings"
     ) {

@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 const DB_NAME = "chrome-activity-reader";
 
-function makeSession(partial) {
+function makeActivity(partial = {}) {
+  const now = Date.now();
   return {
     id: crypto.randomUUID(),
     tabId: 1,
@@ -10,15 +11,18 @@ function makeSession(partial) {
     url: "https://example.com",
     title: "Example",
     domain: "example.com",
-    startAt: Date.now() - 30_000,
-    endAt: Date.now() - 5_000,
-    durationSec: 25,
-    endReason: "tab_switch",
+    openedAt: now - 30_000,
+    lastSeenAt: now - 5_000,
+    closedAt: null,
+    everFocused: true,
+    totalFocusedSec: 18,
+    focusCount: 1,
+    lastFocusedAt: now - 7_000,
     ...partial
   };
 }
 
-async function clearSessions(page) {
+async function clearActivityStore(page) {
   await page.evaluate(async ({ name }) => {
     const request = indexedDB.open(name);
     const db = await new Promise((resolve, reject) => {
@@ -27,18 +31,21 @@ async function clearSessions(page) {
     });
 
     await new Promise((resolve, reject) => {
-      const tx = db.transaction("sessions", "readwrite");
-      const request = tx.objectStore("sessions").clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const tx = db.transaction(["tab_activity", "sessions", "settings"], "readwrite");
+      tx.objectStore("tab_activity").clear();
+      tx.objectStore("sessions").clear();
+      tx.objectStore("settings").clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
     });
 
     db.close();
   }, { name: DB_NAME });
 }
 
-async function seedSessions(page, sessions) {
-  await page.evaluate(async ({ name, sessionsToInsert }) => {
+async function seedActivities(page, activities) {
+  await page.evaluate(async ({ name, activitiesToInsert }) => {
     const request = indexedDB.open(name);
     const db = await new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
@@ -46,20 +53,18 @@ async function seedSessions(page, sessions) {
     });
 
     await new Promise((resolve, reject) => {
-      const tx = db.transaction("sessions", "readwrite");
-      const store = tx.objectStore("sessions");
-
-      for (const session of sessionsToInsert) {
-        store.put(session);
+      const tx = db.transaction("tab_activity", "readwrite");
+      const store = tx.objectStore("tab_activity");
+      for (const activity of activitiesToInsert) {
+        store.put(activity);
       }
-
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
 
     db.close();
-  }, { name: DB_NAME, sessionsToInsert: sessions });
+  }, { name: DB_NAME, activitiesToInsert: activities });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -90,8 +95,14 @@ test.beforeEach(async ({ page }) => {
           window.__calls.push({ api: "runtime.openOptionsPage" });
           return {};
         },
-        sendMessage: async () => {
-          window.__calls.push({ api: "runtime.sendMessage" });
+        sendMessage: async (message) => {
+          window.__calls.push({ api: "runtime.sendMessage", message });
+          if (message?.type === "get-runtime-status") {
+            return { ok: true, meaningfulThresholdSec: 10, theme: "dark" };
+          }
+          if (message?.type === "set-theme") {
+            return { ok: true, theme: message.theme };
+          }
           return { ok: true };
         },
         getURL: (path) => `chrome-extension://test/${path}`
@@ -100,118 +111,122 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("renders timeline, filters by search, and focuses an existing tab", async ({ page }) => {
+test("default meaningful view ranks by focused time and supports search", async ({ page }) => {
   const now = Date.now();
-  const sessions = [
-    makeSession({
-      id: "session-1",
-      tabId: 11,
-      windowId: 3,
-      url: "https://example.com/task",
-      title: "Task board",
-      domain: "example.com",
-      startAt: now - 5 * 60_000,
-      endAt: now - 2 * 60_000,
-      durationSec: 180
+  const activities = [
+    makeActivity({
+      id: "meaningful-high",
+      title: "High focus tab",
+      url: "https://example.com/high",
+      totalFocusedSec: 120,
+      lastSeenAt: now - 20_000
     }),
-    makeSession({
-      id: "session-2",
-      tabId: 20,
-      windowId: 4,
-      url: "https://docs.google.com/document/d/abc",
-      title: "Project notes",
-      domain: "docs.google.com",
-      startAt: now - 20 * 60_000,
-      endAt: now - 10 * 60_000,
-      durationSec: 600
+    makeActivity({
+      id: "meaningful-low",
+      title: "Low focus tab",
+      url: "https://example.com/low",
+      totalFocusedSec: 11,
+      lastSeenAt: now - 1_000
+    }),
+    makeActivity({
+      id: "never-focused",
+      title: "Background open tab",
+      url: "https://example.com/background",
+      everFocused: false,
+      totalFocusedSec: 0,
+      lastSeenAt: now - 500
     })
   ];
 
   await page.goto("/ui/dashboard.html");
-  await clearSessions(page);
-  await seedSessions(page, sessions);
+  await clearActivityStore(page);
+  await seedActivities(page, activities);
   await page.reload();
 
-  await expect(page.locator(".timeline-item")).toHaveCount(2);
-  await expect(page.locator("#summary-total")).toHaveText("2 sessions");
+  await expect(page.locator(".activity-item")).toHaveCount(2);
+  await expect(page.locator("#summary-total")).toHaveText("2");
+  await expect(page.locator(".activity-item").first()).toContainText("High focus tab");
 
-  await page.fill("#search", "docs.google");
-  await expect(page.locator(".timeline-item")).toHaveCount(1);
-  await expect(page.locator(".item-title")).toContainText("Project notes");
+  await page.fill("#search", "low focus");
+  await expect(page.locator(".activity-item")).toHaveCount(1);
+  await expect(page.locator(".activity-item").first()).toContainText("Low focus tab");
+});
 
-  await page.fill("#search", "task board");
+test("all tabs view includes never-focused and focuses existing tab", async ({ page }) => {
+  const now = Date.now();
+  const activities = [
+    makeActivity({
+      id: "never-focused",
+      tabId: 100,
+      windowId: 5,
+      title: "Background open tab",
+      url: "https://example.com/background",
+      everFocused: false,
+      totalFocusedSec: 0,
+      lastSeenAt: now - 500
+    }),
+    makeActivity({
+      id: "normal-focused",
+      tabId: 101,
+      windowId: 3,
+      title: "Normal focused tab",
+      url: "https://example.com/focused",
+      everFocused: true,
+      totalFocusedSec: 14,
+      lastSeenAt: now - 2_000
+    })
+  ];
+
+  await page.goto("/ui/dashboard.html");
+  await clearActivityStore(page);
+  await seedActivities(page, activities);
+  await page.reload();
+
+  await page.click('[data-view="all"]');
+  await expect(page.locator(".activity-item")).toHaveCount(2);
+  await expect(page.locator(".activity-item").first()).toContainText("never focused");
+
   await page.evaluate(() => {
-    window.__queryResult = [{ id: 11, windowId: 3, url: "https://example.com/task" }];
+    window.__queryResult = [{ id: 100, windowId: 5, url: "https://example.com/background" }];
   });
-  await page.click(".timeline-item");
+  await page.click(".activity-button");
 
   const calls = await page.evaluate(() => window.__calls);
   expect(calls.some((item) => item.api === "windows.update")).toBeTruthy();
   expect(calls.some((item) => item.api === "tabs.update")).toBeTruthy();
 });
 
-test("supports range switching between 1h and 4h views", async ({ page }) => {
+test("most recent view handles navigation actions and settings", async ({ page }) => {
   const now = Date.now();
-  const sessions = [
-    makeSession({
-      id: "session-recent",
-      url: "https://example.com/recent",
-      title: "Recent tab",
-      domain: "example.com",
-      startAt: now - 10 * 60_000,
-      endAt: now - 8 * 60_000,
-      durationSec: 120
-    }),
-    makeSession({
-      id: "session-older",
-      url: "https://example.com/older",
-      title: "Older tab",
-      domain: "example.com",
-      startAt: now - 3 * 60 * 60_000,
-      endAt: now - 3 * 60 * 60_000 + 180_000,
-      durationSec: 180
-    })
-  ];
-
-  await page.goto("/ui/dashboard.html");
-  await clearSessions(page);
-  await seedSessions(page, sessions);
-  await page.reload();
-
-  await expect(page.locator(".timeline-item")).toHaveCount(1);
-  await expect(page.locator(".item-title")).toContainText("Recent tab");
-
-  await page.click('[data-range="4h"]');
-  await expect(page.locator(".timeline-item")).toHaveCount(2);
-});
-
-test("opens url when matching tab is not currently open and supports settings action", async ({ page }) => {
-  const now = Date.now();
-  const sessions = [
-    makeSession({
-      id: "session-closed",
-      url: "https://example.com/closed",
+  const activities = [
+    makeActivity({
+      id: "closed",
+      tabId: 202,
       title: "Closed tab",
-      domain: "example.com",
-      startAt: now - 15 * 60_000,
-      endAt: now - 12 * 60_000,
-      durationSec: 180
+      url: "https://example.com/closed",
+      closedAt: now - 2_000,
+      lastSeenAt: now - 2_000
     })
   ];
 
   await page.goto("/ui/dashboard.html");
-  await clearSessions(page);
-  await seedSessions(page, sessions);
+  await clearActivityStore(page);
+  await seedActivities(page, activities);
   await page.reload();
 
   await page.evaluate(() => {
     window.__queryResult = [];
   });
 
-  await page.click(".timeline-item");
+  await page.click('[data-view="recent"]');
+  await page.click(".activity-button");
   await page.click("#open-settings");
+  await page.click("#open-side-panel");
 
   const calls = await page.evaluate(() => window.__calls);
-  expect(calls.some((item) => item.api === "tabs.create" && item.options?.url === "https://example.com/closed")).toBeTruthy();
+  expect(
+    calls.some((item) => item.api === "tabs.create" && item.options?.url === "https://example.com/closed")
+  ).toBeTruthy();
   expect(calls.some((item) => item.api === "runtime.openOptionsPage")).toBeTruthy();
+  expect(calls.some((item) => item.api === "runtime.sendMessage" && item.message?.type === "open-side-panel")).toBeTruthy();
 });

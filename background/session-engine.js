@@ -23,6 +23,7 @@ function normalizeSessionShape(input) {
 
   return {
     id: String(input.id || defaultIdGenerator()),
+    activityId: String(input.activityId || ""),
     tabId: Number(input.tabId),
     windowId: Number(input.windowId),
     url: String(input.url || ""),
@@ -38,6 +39,7 @@ function normalizeSessionShape(input) {
 function createSessionFromTab(tab, now, idGenerator) {
   return {
     id: idGenerator(),
+    activityId: String(tab.activityId || ""),
     tabId: tab.id,
     windowId: tab.windowId,
     url: tab.url,
@@ -171,6 +173,7 @@ export function createSessionEngine({
       state.activeSession.url = tab.url || state.activeSession.url;
       state.activeSession.title = readableTitle(tab.title, state.activeSession.url);
       state.activeSession.domain = extractDomain(state.activeSession.url);
+      state.activeSession.activityId = String(tab.activityId || state.activeSession.activityId || "");
 
       return {
         changed: true,

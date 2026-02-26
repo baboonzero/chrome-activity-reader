@@ -3,106 +3,137 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chrome Activity Reader Settings</title>
-    <link rel="stylesheet" href="./dashboard.css" />
+    <title>Activity Reader Settings</title>
+    <link rel="icon" href="../assets/icons/icon-32.png" />
+    <link rel="stylesheet" href="./activity.css" />
     <style>
+      .settings-grid {
+        display: grid;
+        gap: 12px;
+      }
+
       .settings-card {
-        background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        box-shadow: var(--shadow);
-        padding: 16px;
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 14px;
         display: grid;
-        gap: 14px;
+        gap: 10px;
       }
 
-      .row {
+      .settings-row {
         display: grid;
-        gap: 8px;
+        gap: 6px;
       }
 
-      textarea {
-        width: 100%;
-        min-height: 160px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 12px;
-        resize: vertical;
-        font: inherit;
-      }
-
-      .inline-row {
+      .inline {
         display: flex;
         align-items: center;
         gap: 10px;
       }
 
-      .hint {
-        color: var(--ink-soft);
-        margin: 0;
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-      }
-
-      button {
+      textarea,
+      select {
+        min-height: 40px;
+        border-radius: 12px;
         border: 1px solid var(--border);
-        background: #fff;
-        border-radius: 10px;
-        padding: 10px 14px;
-        cursor: pointer;
+        padding: 9px 12px;
+        color: var(--ink);
+        background: rgba(0, 0, 0, 0.12);
+        font: inherit;
       }
 
-      #save {
-        background: var(--accent);
-        color: white;
-        border-color: transparent;
+      body[data-theme="light"] textarea,
+      body[data-theme="light"] select {
+        background: rgba(255, 255, 255, 0.86);
+      }
+
+      textarea {
+        min-height: 140px;
+        resize: vertical;
+      }
+
+      .hint {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
       }
     </style>
   </head>
-  <body>
-    <main class="page">
-      <header class="topbar">
-        <div>
-          <h1>Settings</h1>
-          <p class="subtitle">Control tracking scope and privacy behavior.</p>
+  <body data-surface="full" data-theme="dark">
+    <main class="shell">
+      <header class="hero">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="ring ring-a"></span>
+            <span class="ring ring-b"></span>
+            <span class="pulse"></span>
+          </div>
+          <div>
+            <h1>Settings</h1>
+            <p class="subtitle">Tune privacy, exclusions, and appearance.</p>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button id="open-dashboard" type="button" class="btn ghost">Dashboard</button>
+          <button id="open-side-panel" type="button" class="btn ghost">Open Side Panel</button>
         </div>
       </header>
 
-      <section class="settings-card">
-        <div class="row">
-          <div class="inline-row">
-            <input id="paused" type="checkbox" />
-            <label for="paused">Pause tracking</label>
+      <section class="settings-grid">
+        <article class="settings-card">
+          <div class="settings-row">
+            <label class="inline" for="paused">
+              <input id="paused" type="checkbox" />
+              <span>Pause tracking</span>
+            </label>
+            <p class="hint">No new focus activity is recorded while paused.</p>
           </div>
-          <p class="hint">When enabled, no new activity sessions are recorded.</p>
-        </div>
 
-        <div class="row">
-          <label for="excluded-domains">Excluded domains (one per line)</label>
-          <textarea
-            id="excluded-domains"
-            placeholder="example.com&#10;mail.google.com&#10;internal.company.com"
-          ></textarea>
-          <p class="hint">
-            Any matching domain and subdomain will be excluded from tracking.
-          </p>
-        </div>
+          <div class="settings-row">
+            <label for="theme">Theme</label>
+            <select id="theme">
+              <option value="dark">Dark (default)</option>
+              <option value="light">Light</option>
+            </select>
+            <p class="hint">One shared theme applies to both side panel and full dashboard.</p>
+          </div>
 
-        <div class="row">
-          <p class="hint">
-            Retention: <strong id="retention-days">30</strong> days (default).
-          </p>
-        </div>
+          <div class="settings-row">
+            <p class="hint">
+              Meaningful threshold: <strong>&gt; 10s focused time</strong>
+            </p>
+            <p class="hint">Retention: <strong id="retention-days">30</strong> days (default).</p>
+          </div>
+        </article>
 
-        <div class="actions">
-          <button id="save" type="button">Save Settings</button>
-          <button id="open-dashboard" type="button">Open Dashboard</button>
-        </div>
+        <article class="settings-card">
+          <div class="settings-row">
+            <label for="excluded-domains">Excluded domains (one per line)</label>
+            <textarea
+              id="excluded-domains"
+              placeholder="example.com&#10;mail.google.com&#10;internal.company.com"
+            ></textarea>
+            <p class="hint">Matching domains and subdomains are excluded from tracking.</p>
+          </div>
 
-        <p id="status" class="hint"></p>
+          <div class="action-row">
+            <button id="save" type="button" class="btn primary">Save Settings</button>
+          </div>
+          <p id="status" class="status"></p>
+        </article>
       </section>
     </main>
 

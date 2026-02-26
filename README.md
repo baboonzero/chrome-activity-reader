@@ -1,19 +1,28 @@
 # Chrome Activity Reader
 
-Chrome extension MVP that tracks tab-level activity and shows what you worked on over the last 1 hour, 4 hours, 1 day, and 7 days.
+Chrome extension that tracks all web tabs (`http/https`) and surfaces attention-weighted activity across the last 1 hour, 4 hours, 1 day, and 7 days.
 
 For complete project history, architecture decisions, execution timeline, built/not-built scope, and current status, see:
 - `project-history.md`
 
-## MVP Features
+## Features
 
-- Tracks active tab sessions across Chrome windows.
-- Captures session start/end time, URL, title, domain, and duration.
-- Dashboard timeline with filters: `1h`, `4h`, `24h`, `7d`.
-- Click timeline entry to focus existing tab or open URL if closed.
+- Dual tracking model:
+  - Tab lifecycle tracking for all web tabs (including never-focused tabs)
+  - Focus-segment tracking for true time-spent
+- View filters:
+  - `Meaningful` (default): focused time `> 10s`
+  - `All tabs`: includes `never focused` entries
+  - `Most recent`: recency-first ordering
+- Time range filters: `1h`, `4h`, `24h`, `7d`
+- Global side panel UI (dark mode default) with:
+  - Search
+  - Theme toggle (shared with full dashboard)
+  - `Expand` to full dashboard tab
+- Click any entry to focus an existing tab or open it if already closed.
 - Local-only storage (IndexedDB), no cloud sync.
 - Retention defaults to 30 days.
-- Settings for pause tracking and excluded domains.
+- Settings for pause tracking, excluded domains, and shared theme.
 
 ## Load Extension (Developer Mode)
 
@@ -25,8 +34,10 @@ For complete project history, architecture decisions, execution timeline, built/
 
 ## Use
 
-- Click extension icon to open dashboard.
-- Open Options from extension details page to manage settings.
+1. Click extension icon to open the side panel.
+2. Use `Meaningful / All tabs / Most recent` filters.
+3. Click `Expand` in side panel to open full dashboard tab.
+4. Open Options/Settings to manage privacy and theme.
 
 ## Test Loop (Playwright)
 
@@ -51,8 +62,8 @@ For complete project history, architecture decisions, execution timeline, built/
     - PowerShell: `$env:VALIDATION_DURATION_MINUTES='10'; npm run test:validate:long`
 
 Includes:
-- Unit tests for session engine transitions and IndexedDB retention/query boundaries.
-- Playwright dashboard tests for timeline filters, focus/open behavior, and settings action.
+- Unit tests for session engine transitions, activity aggregation, and retention boundaries.
+- Playwright tests for meaningful/all/recent views, ranking, and focus/open behavior.
 - Timestamped screenshots and accessibility snapshots for long-run validation evidence.
 - Detailed evidence log:
   - `docs/testing/validation-evidence-2026-02-26.md`
@@ -72,5 +83,5 @@ If `default` session fails to start on Windows, use a non-default `--session` na
 
 ## Notes
 
-- MVP tracks tab/window focus activity only.
-- No content script and no in-page interaction capture.
+- Tracking scope is web tabs only (`http/https`), not `chrome://` or extension pages.
+- No content-script capture of in-page click/typing/scroll behavior.

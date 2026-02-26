@@ -85,11 +85,19 @@ async function run() {
 
     const dashboardUrl = `chrome-extension://${extensionId}/ui/dashboard.html`;
     const settingsUrl = `chrome-extension://${extensionId}/ui/settings.html`;
+    const panelUrl = `chrome-extension://${extensionId}/ui/panel.html`;
 
     const dashboardPage = await context.newPage();
     await dashboardPage.goto(dashboardUrl, { waitUntil: "domcontentloaded" });
     await dashboardPage.screenshot({
       path: path.join(screenshotsDir, "00-dashboard-initial.png"),
+      fullPage: true
+    });
+
+    const panelPage = await context.newPage();
+    await panelPage.goto(panelUrl, { waitUntil: "domcontentloaded" });
+    await panelPage.screenshot({
+      path: path.join(screenshotsDir, "00-panel-initial.png"),
       fullPage: true
     });
 
@@ -227,23 +235,52 @@ async function run() {
     await dashboardPage.click('[data-range="168h"]');
     await dashboardPage.waitForTimeout(800);
     await dashboardPage.screenshot({
-      path: path.join(screenshotsDir, "99-dashboard-final-7d.png"),
+      path: path.join(screenshotsDir, "99-dashboard-final-meaningful-7d.png"),
+      fullPage: true
+    });
+
+    await dashboardPage.click('[data-view="all"]');
+    await dashboardPage.waitForTimeout(300);
+    await dashboardPage.screenshot({
+      path: path.join(screenshotsDir, "99-dashboard-final-all-7d.png"),
+      fullPage: true
+    });
+
+    await dashboardPage.click('[data-view="recent"]');
+    await dashboardPage.waitForTimeout(300);
+    await dashboardPage.screenshot({
+      path: path.join(screenshotsDir, "99-dashboard-final-recent-7d.png"),
       fullPage: true
     });
 
     const finalSummary = await dashboardPage.evaluate(async (settingsPageUrl) => {
-      const timelineCount = document.querySelectorAll(".timeline-item").length;
-      const summaryTotal = document.querySelector("#summary-total")?.textContent?.trim() || "";
-      const summaryDuration = document.querySelector("#summary-duration")?.textContent?.trim() || "";
+      const clickView = async (view) => {
+        const button = document.querySelector(`[data-view="${view}"]`);
+        if (button) {
+          button.click();
+          await new Promise((resolve) => setTimeout(resolve, 120));
+        }
+
+        return {
+          count: document.querySelectorAll(".activity-item").length,
+          summaryTotal: document.querySelector("#summary-total")?.textContent?.trim() || "",
+          summaryDuration: document.querySelector("#summary-duration")?.textContent?.trim() || "",
+          summaryNeverFocused: document.querySelector("#summary-never-focused")?.textContent?.trim() || ""
+        };
+      };
+
+      const meaningful = await clickView("meaningful");
+      const allTabs = await clickView("all");
+      const recent = await clickView("recent");
       const runtime = await chrome.runtime.sendMessage({ type: "get-runtime-status" });
-      const allTabs = await chrome.tabs.query({});
+      const browserTabs = await chrome.tabs.query({});
 
       return {
-        timelineCount,
-        summaryTotal,
-        summaryDuration,
+        meaningful,
+        allTabs,
+        recent,
         runtime,
-        allTabCount: allTabs.length,
+        allTabCount: browserTabs.length,
         settingsPageUrl
       };
     }, settingsUrl);
@@ -272,9 +309,16 @@ async function run() {
       "",
       "## Final Summary",
       "",
-      `- Timeline item count (7d view): ${finalSummary.timelineCount}`,
-      `- Summary total: ${finalSummary.summaryTotal}`,
-      `- Summary duration: ${finalSummary.summaryDuration}`,
+      `- Meaningful count (7d): ${finalSummary.meaningful.count}`,
+      `- Meaningful total: ${finalSummary.meaningful.summaryTotal}`,
+      `- Meaningful duration: ${finalSummary.meaningful.summaryDuration}`,
+      `- Meaningful never-focused: ${finalSummary.meaningful.summaryNeverFocused}`,
+      `- All tabs count (7d): ${finalSummary.allTabs.count}`,
+      `- All tabs total: ${finalSummary.allTabs.summaryTotal}`,
+      `- All tabs duration: ${finalSummary.allTabs.summaryDuration}`,
+      `- All tabs never-focused: ${finalSummary.allTabs.summaryNeverFocused}`,
+      `- Most recent count (7d): ${finalSummary.recent.count}`,
+      `- Most recent total: ${finalSummary.recent.summaryTotal}`,
       `- Runtime status OK: ${Boolean(finalSummary.runtime?.ok)}`,
       `- Runtime paused: ${String(finalSummary.runtime?.paused)}`,
       `- Runtime retentionDays: ${String(finalSummary.runtime?.retentionDays)}`,

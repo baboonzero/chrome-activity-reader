@@ -3,18 +3,28 @@
   "name": "Chrome Activity Reader",
   "description": "Track tab-level activity across Chrome windows and review what you worked on recently.",
   "version": "0.1.0",
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "32": "assets/icons/icon-32.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  },
   "permissions": [
     "tabs",
     "storage",
     "idle",
-    "alarms"
+    "alarms",
+    "sidePanel"
   ],
   "background": {
     "service_worker": "background/service-worker.js",
     "type": "module"
   },
+  "side_panel": {
+    "default_path": "ui/panel.html"
+  },
   "action": {
-    "default_title": "Open Chrome Activity Reader"
+    "default_title": "Open Chrome Activity Reader Side Panel"
   },
   "options_page": "ui/settings.html"
 }

@@ -6,10 +6,14 @@ import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import {
   __resetDatabaseForTests,
   addSession,
+  applyFocusToTabActivity,
   getSettings,
   initDatabase,
   listSessionsInRange,
+  listTabActivitiesInRange,
   pruneSessionsOlderThan,
+  pruneTabActivitiesOlderThan,
+  saveTabActivity,
   updateSettings
 } from "../../shared/db.js";
 
@@ -38,15 +42,17 @@ test.after(async () => {
   await deleteDatabase();
 });
 
-test("normalizes settings and enforces minimum retention", async () => {
+test("normalizes settings and enforces minimum retention with theme", async () => {
   const result = await updateSettings({
     retentionDays: 0,
     paused: "not-a-bool",
-    excludedDomains: ["Example.com", " example.com ", "", "docs.example.com"]
+    excludedDomains: ["Example.com", " example.com ", "", "docs.example.com"],
+    theme: "light"
   });
 
   assert.equal(result.retentionDays, 1);
   assert.equal(result.paused, false);
+  assert.equal(result.theme, "light");
   assert.deepEqual(result.excludedDomains, ["example.com", "docs.example.com"]);
 
   const readBack = await getSettings();
@@ -98,9 +104,71 @@ test("returns only sessions overlapping requested time window and sorts newest f
   );
 });
 
-test("prunes sessions older than cutoff and keeps newer sessions", async () => {
+test("stores and filters tab activities in range", async () => {
+  await saveTabActivity({
+    id: "activity-old",
+    tabId: 1,
+    windowId: 1,
+    url: "https://example.com/old",
+    title: "Old",
+    domain: "example.com",
+    openedAt: 1_000,
+    lastSeenAt: 2_000,
+    everFocused: false,
+    totalFocusedSec: 0
+  });
+
+  await saveTabActivity({
+    id: "activity-new",
+    tabId: 2,
+    windowId: 1,
+    url: "https://example.com/new",
+    title: "New",
+    domain: "example.com",
+    openedAt: 6_000,
+    lastSeenAt: 7_000,
+    everFocused: true,
+    totalFocusedSec: 12
+  });
+
+  const result = await listTabActivitiesInRange(5_000, 8_000);
+  assert.deepEqual(
+    result.map((item) => item.id),
+    ["activity-new"]
+  );
+});
+
+test("applies focus duration to tab activity aggregates", async () => {
+  await saveTabActivity({
+    id: "activity-focus",
+    tabId: 10,
+    windowId: 2,
+    url: "https://example.com/focus",
+    title: "Focus",
+    domain: "example.com",
+    openedAt: 10_000,
+    lastSeenAt: 10_000,
+    everFocused: false,
+    totalFocusedSec: 0,
+    focusCount: 0
+  });
+
+  const updated = await applyFocusToTabActivity({
+    activityId: "activity-focus",
+    durationSec: 14,
+    focusedAt: 11_200
+  });
+
+  assert.equal(updated.everFocused, true);
+  assert.equal(updated.totalFocusedSec, 14);
+  assert.equal(updated.focusCount, 1);
+  assert.equal(updated.lastFocusedAt, 11_200);
+  assert.equal(updated.lastSeenAt, 11_200);
+});
+
+test("prunes old session and tab activity data", async () => {
   await addSession({
-    id: "old",
+    id: "session-old",
     tabId: 1,
     windowId: 1,
     url: "https://example.com/old",
@@ -112,7 +180,7 @@ test("prunes sessions older than cutoff and keeps newer sessions", async () => {
     endReason: "tab_switch"
   });
   await addSession({
-    id: "new",
+    id: "session-new",
     tabId: 2,
     windowId: 1,
     url: "https://example.com/new",
@@ -124,17 +192,51 @@ test("prunes sessions older than cutoff and keeps newer sessions", async () => {
     endReason: "tab_switch"
   });
 
-  const deletedCount = await pruneSessionsOlderThan(5_000);
-  assert.equal(deletedCount, 1);
+  await saveTabActivity({
+    id: "activity-old",
+    tabId: 1,
+    windowId: 1,
+    url: "https://example.com/old",
+    title: "Old",
+    domain: "example.com",
+    openedAt: 1_000,
+    lastSeenAt: 2_000,
+    everFocused: false,
+    totalFocusedSec: 0
+  });
+  await saveTabActivity({
+    id: "activity-new",
+    tabId: 2,
+    windowId: 1,
+    url: "https://example.com/new",
+    title: "New",
+    domain: "example.com",
+    openedAt: 10_000,
+    lastSeenAt: 11_000,
+    everFocused: true,
+    totalFocusedSec: 8
+  });
 
-  const remaining = await listSessionsInRange(0, 20_000);
+  const deletedSessions = await pruneSessionsOlderThan(5_000);
+  const deletedActivities = await pruneTabActivitiesOlderThan(5_000);
+  assert.equal(deletedSessions, 1);
+  assert.equal(deletedActivities, 1);
+
+  const sessions = await listSessionsInRange(0, 20_000);
+  const activities = await listTabActivitiesInRange(0, 20_000);
   assert.deepEqual(
-    remaining.map((item) => item.id),
-    ["new"]
+    sessions.map((item) => item.id),
+    ["session-new"]
+  );
+  assert.deepEqual(
+    activities.map((item) => item.id),
+    ["activity-new"]
   );
 });
 
 test("returns empty list for invalid range inputs", async () => {
   const sessions = await listSessionsInRange(Number.NaN, Number.NaN);
+  const tabActivities = await listTabActivitiesInRange(Number.NaN, Number.NaN);
   assert.deepEqual(sessions, []);
+  assert.deepEqual(tabActivities, []);
 });

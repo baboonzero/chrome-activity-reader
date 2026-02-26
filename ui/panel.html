@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chrome Activity Reader</title>
+    <title>Activity Panel</title>
     <link rel="icon" href="../assets/icons/icon-32.png" />
     <link rel="stylesheet" href="./activity.css" />
   </head>
-  <body data-surface="full" data-theme="dark">
+  <body data-surface="panel" data-theme="dark">
     <main class="shell">
       <header class="hero">
         <div class="brand">
@@ -17,13 +17,13 @@
             <span class="pulse"></span>
           </div>
           <div>
-            <h1>Chrome Activity Reader</h1>
-            <p class="subtitle">Track everything. Surface what mattered.</p>
+            <h1>Activity Reader</h1>
+            <p class="subtitle">Side-panel command center</p>
           </div>
         </div>
         <div class="hero-actions">
-          <button id="theme-toggle" type="button" class="btn ghost">Toggle Theme</button>
-          <button id="open-side-panel" type="button" class="btn ghost">Open Side Panel</button>
+          <button id="theme-toggle" type="button" class="btn ghost">Theme</button>
+          <button id="expand-dashboard" type="button" class="btn primary">Expand</button>
           <button id="open-settings" type="button" class="btn ghost">Settings</button>
         </div>
       </header>
@@ -36,25 +36,25 @@
         </div>
 
         <div class="control-group" role="tablist" aria-label="Time range">
-          <button type="button" class="chip active" data-range="1h">Last 1h</button>
-          <button type="button" class="chip" data-range="4h">Last 4h</button>
-          <button type="button" class="chip" data-range="24h">Last 1d</button>
-          <button type="button" class="chip" data-range="168h">Last 7d</button>
+          <button type="button" class="chip active" data-range="1h">1h</button>
+          <button type="button" class="chip" data-range="4h">4h</button>
+          <button type="button" class="chip" data-range="24h">1d</button>
+          <button type="button" class="chip" data-range="168h">7d</button>
         </div>
 
         <label class="search-wrap" for="search">
           <span>Search</span>
-          <input id="search" type="search" placeholder="Find by title, domain, or URL" />
+          <input id="search" type="search" placeholder="Type to filter..." />
         </label>
       </section>
 
       <section class="stats">
         <article class="stat-card">
-          <p class="stat-label">Visible Tabs</p>
+          <p class="stat-label">Visible</p>
           <p id="summary-total" class="stat-value">0</p>
         </article>
         <article class="stat-card">
-          <p class="stat-label">Focused Time</p>
+          <p class="stat-label">Focused</p>
           <p id="summary-duration" class="stat-value">0s</p>
         </article>
         <article class="stat-card">

@@ -29,6 +29,7 @@ The process followed these phases:
 9. Unit + E2E test expansion.
 10. CI pipeline setup and manual acceptance assets.
 11. Final verification and push to GitHub.
+12. Product redesign pass: all-tab tracking, side panel UX, dark-first UI system.
 
 All implementation was done in iterative loops:
 - implement,
@@ -123,16 +124,54 @@ Chronological execution log:
 21. Updated validation evidence document:
     - `docs/testing/validation-evidence-2026-02-26.md`
 
+22. Created approved redesign artifact for all-tab tracking + side panel:
+    - `docs/plans/2026-02-26-all-tab-sidepanel-design.md`
+
+23. Upgraded data model:
+    - added `tab_activity` store and aggregation APIs in `shared/db.js`
+    - retained focus segments in `sessions`
+    - added shared theme setting (`dark` default)
+
+24. Refactored service worker for dual-stream tracking:
+    - tab lifecycle stream for all web tabs
+    - focus segment stream for attention time
+    - synchronized retention pruning across stores
+
+25. Implemented new UX surfaces:
+    - `ui/panel.html` (side panel)
+    - redesigned `ui/dashboard.html` (full dashboard)
+    - shared renderer/style: `ui/activity.js`, `ui/activity.css`
+    - settings redesign with theme + side panel actions
+
+26. Added visual system assets:
+    - custom extension icon set (`assets/icons/*`)
+    - local bundled fonts (`assets/fonts/*`)
+
+27. Updated automated tests for new behavior model and ran:
+    - `npm run test:all` (pass)
+    - `npm run test:smoke:extension` (pass)
+
+28. Executed fresh headed long-duration runtime validation:
+    - Run ID: `20260226-191647`
+    - Artifacts: `artifacts/validation/20260226-191647/`
+
+29. Enhanced validation loop to capture end-state screenshots and metrics for all view filters (`Meaningful`, `All tabs`, `Most recent`), then reran headed validation:
+    - Run ID: `20260226-192909`
+    - All tabs proof: `count=6`, `never-focused=4`
+    - Artifacts: `artifacts/validation/20260226-192909/`
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
 
 1. **Platform:** Chrome extension (MV3) as core product.
-2. **MVP tracking scope:** Tab-level activity only (no in-page click/scroll/input capture).
+2. **Tracking scope:** All web tabs tracked + focused-time aggregation (still no in-page click/scroll/input capture).
 3. **Data storage:** IndexedDB for sessions/settings/snapshots.
 4. **Retention default:** 30 days.
 5. **Privacy stance:** Local-only storage; no cloud sync in MVP.
-6. **UI model:** Extension dashboard + settings page.
+6. **UI model:** Global side panel + full dashboard + settings.
+7. **Default work view:** `Meaningful` (`focused time > 10s`) with toggles for `All tabs` and `Most recent`.
+8. **Theme policy:** Dark mode default with one shared setting across side panel/full dashboard.
 
 ### Engineering Decisions
 
@@ -149,7 +188,7 @@ First implementation slice:
 1. `manifest.json` with MV3 service worker and permissions.
 2. `background/service-worker.js` with event listeners for tabs/windows/idle/alarms.
 3. `shared/db.js` for IndexedDB stores and session/settings persistence.
-4. Dashboard + Settings pages:
+4. Dashboard + Settings pages (initially):
    - `ui/dashboard.html`, `ui/dashboard.js`, `ui/dashboard.css`
    - `ui/settings.html`, `ui/settings.js`
 
@@ -159,16 +198,25 @@ This delivered a runnable end-to-end MVP skeleton quickly.
 
 ### Core Functionality
 
-- Active-tab session tracking across windows.
+- Dual-stream tracking:
+  - all-tab lifecycle tracking for web tabs (`http/https`)
+  - focus-segment tracking for time spent
 - Session end reasons (`tab_switch`, `window_blur`, `tab_closed`, `idle`, `lock`, etc.).
-- Dashboard timeline with:
-  - 1h / 4h / 1d / 7d filters
-  - search by title/domain/url
-  - click-to-focus existing tab
-  - fallback open URL if tab is closed
+- Filtered activity views:
+  - `Meaningful` (default, focused time >10s)
+  - `All tabs` (includes `never focused`)
+  - `Most recent` (recency-first)
+- Time filters:
+  - 1h / 4h / 1d / 7d
+- Search by title/domain/url.
+- Click-to-focus existing tab with fallback to open URL when closed.
+- Side panel workflow:
+  - global side panel entry from action click
+  - `Expand` action opens full dashboard tab
 - Settings:
   - pause tracking
   - excluded domains
+  - shared dark/light theme
   - retention display (30 days default)
 
 ### Reliability and Hardening
@@ -199,9 +247,9 @@ Not in MVP (intentionally out of scope):
 2. Cloud sync/account/multi-device history.
 3. Cross-browser support (Edge/Firefox/Safari).
 4. Advanced analytics (project clusters, AI summaries, semantic categorization).
-5. Side panel UI (only dashboard/options pages currently).
-6. Packaging/publishing flow for Chrome Web Store.
-7. Formal migration/versioning strategy for future DB schema upgrades.
+5. Packaging/publishing flow for Chrome Web Store.
+6. Formal migration/versioning strategy for future DB schema upgrades.
+7. Analytics clustering/semantic work summaries.
 
 ## 8. Current Status
 
@@ -213,6 +261,7 @@ Not in MVP (intentionally out of scope):
 - CI workflow: **configured**
 - Manual acceptance assets: **present**
 - Headed long-duration runtime validation with artifacts: **complete**
+- Side panel + all-tab model rollout: **complete**
 - Repo pushed to GitHub: **yes**
 
 ### Quality Status
@@ -221,7 +270,7 @@ Not in MVP (intentionally out of scope):
 - `npm run test:e2e`: passing
 - `npm run test:all`: passing
 - `npm run test:smoke:extension`: passing
-- Long-duration headed validation: passing (`runId=20260226-165807`, `timelineCount=10`, `retentionDays=30`)
+- Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
 
 ### Branch/History Status
 
@@ -233,6 +282,7 @@ Primary commits:
 - `0b49afb` Add full project documentation, CI workflow, and acceptance checklist
 - `0a14196` Rename project history doc and add real extension smoke test
 - `c59d30f` Add long-duration extension validation with screenshot evidence
+- `6ac346b` Document headed long-run validation and agent-browser evidence
 
 ## 9. File-Level Map Of What Exists
 
@@ -244,9 +294,20 @@ Primary commits:
 - `shared/db.js`
 - `shared/time.js`
 - `shared/url.js`
+- `assets/icons/icon-16.png`
+- `assets/icons/icon-32.png`
+- `assets/icons/icon-48.png`
+- `assets/icons/icon-128.png`
+- `assets/fonts/space-grotesk-400.ttf`
+- `assets/fonts/space-grotesk-500.ttf`
+- `assets/fonts/space-grotesk-700.ttf`
+- `assets/fonts/ibm-plex-sans-400.ttf`
+- `assets/fonts/ibm-plex-sans-500.ttf`
+- `assets/fonts/ibm-plex-sans-600.ttf`
 - `ui/dashboard.html`
-- `ui/dashboard.js`
-- `ui/dashboard.css`
+- `ui/panel.html`
+- `ui/activity.js`
+- `ui/activity.css`
 - `ui/settings.html`
 - `ui/settings.js`
 
@@ -265,7 +326,9 @@ Primary commits:
 - `docs/plans/2026-02-26-chrome-activity-reader-design.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-implementation-plan.md`
 - `docs/plans/2026-02-26-swarm-execution-plan.md`
+- `docs/plans/2026-02-26-all-tab-sidepanel-design.md`
 - `docs/testing/manual-acceptance-checklist.md`
+- `docs/testing/validation-evidence-2026-02-26.md`
 
 ### Operations
 
@@ -290,11 +353,12 @@ Primary commits:
 
 ## 11. Summary
 
-This project has moved from concept to a tested MVP with:
-- complete tab-level activity tracking,
-- timeline navigation UX,
+This project has moved from concept to a tested, upgraded MVP with:
+- all-tab web activity capture plus focused-time aggregation,
+- side panel and full-dashboard workflows,
+- meaningful/all/recent filtering model,
+- dark-first themed UI with shared theme settings,
 - privacy-first local storage,
-- hardening for service-worker lifecycle behavior,
 - automated and manual verification paths,
 - CI on GitHub.
 

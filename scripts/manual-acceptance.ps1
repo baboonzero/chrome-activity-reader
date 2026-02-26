@@ -30,13 +30,15 @@ if ($RunAutomatedTests) {
 
 Write-Section "Manual Acceptance Steps"
 Write-Host "1. Open chrome://extensions and load this folder as unpacked extension."
-Write-Host "2. Open extension dashboard from toolbar action."
+Write-Host "2. Click extension action icon to open side panel."
 Write-Host "3. Execute checklist in docs/testing/manual-acceptance-checklist.md."
 Write-Host "4. Record any failures and reproduce with timestamps."
 
 Write-Section "Quick Links"
-Write-Host "Dashboard URL after install:"
+Write-Host "Dashboard URL:"
 Write-Host "chrome-extension://<extension-id>/ui/dashboard.html"
+Write-Host "Side panel path:"
+Write-Host "chrome-extension://<extension-id>/ui/panel.html"
 
 Write-Section "Done"
 Write-Host "Acceptance helper completed."

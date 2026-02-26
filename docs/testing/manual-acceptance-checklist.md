@@ -1,7 +1,7 @@
 # Manual Acceptance Checklist
 
-Date: 2026-02-26
-Scope: Chrome Activity Reader MVP acceptance in a real Chrome session.
+Date: 2026-02-26  
+Scope: Chrome Activity Reader side-panel and full-dashboard acceptance in a real Chrome session.
 
 ## 1. Preconditions
 
@@ -10,77 +10,105 @@ Scope: Chrome Activity Reader MVP acceptance in a real Chrome session.
 - Developer mode enabled.
 - No critical extension errors in service worker console.
 
-## 2. Baseline Validation
+## 2. Side Panel Baseline
 
 1. Click extension action icon.
-2. Confirm dashboard opens.
-3. Confirm default range is `Last 1h`.
-4. Confirm summary section and timeline render without runtime errors.
+2. Confirm side panel opens (column layout, full height).
+3. Confirm default view is `Meaningful`.
+4. Confirm default theme is dark.
 
 Expected:
-- Dashboard visible and interactive.
-- No red errors in extension background console.
+- Side panel renders and is interactive.
+- No runtime errors in extension console.
 
-## 3. Session Tracking Behavior
+## 3. Global Side Panel and Expand
 
-1. Open 3+ tabs across at least 2 windows.
-2. Switch active tabs every 5-10 seconds for 1-2 minutes.
-3. Return to dashboard.
-
-Expected:
-- New timeline rows appear with title, domain, URL, and duration.
-- Entries reflect active focus changes.
-- No obviously overlapping sessions for the same focused interval.
-
-## 4. Range Filters and Search
-
-1. On dashboard, click filters `1h`, `4h`, `1d`, `7d`.
-2. Use search input with domain text and title text.
+1. Open at least 2 Chrome windows.
+2. Click extension action icon and verify panel access across windows.
+3. In panel, click `Expand`.
 
 Expected:
-- Filter switch updates timeline content.
-- Search reduces visible rows correctly.
-- Summary counts and total duration update with filtered set.
+- Side panel workflow is available in the current browsing context.
+- `Expand` opens full dashboard in a new tab.
 
-## 5. Navigation Actions
+## 4. All-Tab Tracking and View Filters
 
-1. Click a timeline row whose tab is still open.
-2. Close a tracked tab.
-3. Click its row again.
+1. Open 6+ tabs across windows (mixed dwell times).
+2. Leave one tab open but never focused.
+3. Switch among several tabs and spend >10 seconds on at least two.
+4. In panel/dashboard, switch between:
+   - `Meaningful`
+   - `All tabs`
+   - `Most recent`
 
 Expected:
-- Open tab: window/tab is focused.
-- Closed tab: URL opens in a new tab.
+- `Meaningful` only shows entries with focused time >10s.
+- `All tabs` includes `never focused` entries.
+- `Most recent` orders newest activity first.
 
-## 6. Settings and Privacy Controls
+## 5. Range + Search
+
+1. Toggle `1h`, `4h`, `1d`, `7d`.
+2. Search by domain and title text.
+3. Clear search box.
+
+Expected:
+- Result set updates correctly by range.
+- Search filters list and summary metrics.
+- Clearing search restores unfiltered results for selected view/range.
+
+## 6. Row Navigation Behavior
+
+1. Click row for an open tab.
+2. Close one tracked tab, then click its row.
+3. Confirm side panel remains open after row clicks.
+
+Expected:
+- Open row: focuses existing window/tab.
+- Closed row: opens URL in new tab.
+- Side panel remains visible.
+
+## 7. Theme + Settings
 
 1. Open settings.
-2. Enable `Pause tracking`.
-3. Switch tabs for ~30 seconds.
-4. Disable `Pause tracking`.
-5. Add excluded domain (for example `example.com`) and save.
-6. Browse excluded domain, then return to dashboard.
+2. Toggle theme to light and save.
+3. Verify both panel and full dashboard switch to light.
+4. Toggle back to dark and save.
 
 Expected:
-- While paused, no new sessions should be recorded.
+- Theme is shared across panel and full views.
+- Dark is default on fresh load.
+
+## 8. Privacy Controls and Retention
+
+1. Enable `Pause tracking`.
+2. Switch tabs for ~30 seconds.
+3. Disable `Pause tracking`.
+4. Add excluded domain (example `example.com`) and save.
+5. Browse excluded domain.
+
+Expected:
+- While paused, no new focus activity is added.
 - After resume, tracking continues.
-- Excluded domain activity is not added.
+- Excluded domains are not tracked.
+- Retention remains 30 days by default.
 
-## 7. Retention and Restart Recovery
+## 9. Service Worker Restart Resilience
 
-1. Confirm retention displayed as 30 days in settings.
-2. Inspect service worker logs and trigger worker restart (from extension page).
-3. Continue browsing and verify timeline continuity.
+1. From `chrome://extensions`, restart service worker.
+2. Continue browsing and revisit panel/dashboard.
 
 Expected:
-- Retention stays at 30 days unless changed in code/config.
-- Worker restart does not break subsequent session capture.
+- Tracker resumes without fatal state corruption.
+- New activity still appears.
 
-## 8. Acceptance Criteria
+## 10. Acceptance Criteria
 
-MVP accepted when all below are true:
-- Tab-level sessions are captured accurately enough for practical use.
-- Dashboard supports 1h/4h/1d/7d visibility.
-- Click-through navigation to active/closed tabs works.
-- Pause + exclusion controls behave as expected.
-- Automated tests pass (`npm run test:all`).
+Accepted when all are true:
+
+- Side panel workflow behaves as designed.
+- All-tab tracking includes `never focused` entries.
+- Meaningful filter threshold (`>10s`) works.
+- Most recent filter and range controls work.
+- Theme synchronization works across views.
+- Automated tests pass (`npm run test:all` and `npm run test:smoke:extension`).
