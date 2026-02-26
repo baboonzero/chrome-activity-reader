@@ -37,6 +37,9 @@ async function run() {
     const status = await dashboardPage.evaluate(async () =>
       chrome.runtime.sendMessage({ type: "get-runtime-status" })
     );
+    const actionClickSimulation = await dashboardPage.evaluate(async () =>
+      chrome.runtime.sendMessage({ type: "debug-trigger-action-click" })
+    );
 
     const panelPage = await context.newPage();
     await panelPage.goto(panelUrl, { waitUntil: "domcontentloaded" });
@@ -52,9 +55,12 @@ async function run() {
       activityListPresent: activityListCount > 0,
       defaultViewActive: defaultViewActive > 0,
       panelViewToggleCount: panelViewCount,
+      actionClickSimulation,
       runtimeStatusOk: status?.ok === true,
       retentionDays: status?.retentionDays,
       paused: status?.paused,
+      sidePanelApiAvailable: status?.sidePanelApiAvailable,
+      openPanelOnActionClick: status?.openPanelOnActionClick,
       settingsHeading
     };
 
@@ -65,7 +71,11 @@ async function run() {
       !result.activityListPresent ||
       !result.defaultViewActive ||
       result.panelViewToggleCount < 3 ||
+      !result.actionClickSimulation?.ok ||
+      !["panel_focused_window", "panel_all_windows", "dashboard_fallback"].includes(result.actionClickSimulation?.mode) ||
       result.runtimeStatusOk !== true ||
+      result.sidePanelApiAvailable !== true ||
+      result.openPanelOnActionClick !== true ||
       result.settingsHeading !== "Settings"
     ) {
       process.exitCode = 1;

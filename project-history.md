@@ -160,6 +160,13 @@ Chronological execution log:
     - All tabs proof: `count=6`, `never-focused=4`
     - Artifacts: `artifacts/validation/20260226-192909/`
 
+30. Hardened action-click validation and fixed testing blind spot after user-reported regression:
+    - extracted action-click flow to `background/action-click.js`
+    - corrected all-windows panel open success criteria (`openedCount > 0`)
+    - added side-panel behavior module + tests (`background/side-panel-behavior.js`, `tests/unit/side-panel-behavior.test.js`)
+    - switched native side-panel behavior to `openPanelOnActionClick: true`
+    - extended smoke assertions to require side-panel API availability and configured action-click behavior
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -172,6 +179,7 @@ Chronological execution log:
 6. **UI model:** Global side panel + full dashboard + settings.
 7. **Default work view:** `Meaningful` (`focused time > 10s`) with toggles for `All tabs` and `Most recent`.
 8. **Theme policy:** Dark mode default with one shared setting across side panel/full dashboard.
+9. **Action-click reliability:** Enable native side-panel open-on-action-click and treat fallback-only behavior as a test smell.
 
 ### Engineering Decisions
 
@@ -271,6 +279,7 @@ Not in MVP (intentionally out of scope):
 - `npm run test:all`: passing
 - `npm run test:smoke:extension`: passing
 - Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
+- Action-click config check: passing (`sidePanelApiAvailable=true`, `openPanelOnActionClick=true`)
 
 ### Branch/History Status
 
@@ -291,6 +300,8 @@ Primary commits:
 - `manifest.json`
 - `background/service-worker.js`
 - `background/session-engine.js`
+- `background/action-click.js`
+- `background/side-panel-behavior.js`
 - `shared/db.js`
 - `shared/time.js`
 - `shared/url.js`
@@ -315,6 +326,8 @@ Primary commits:
 
 - `tests/unit/session-engine.test.js`
 - `tests/unit/db.test.js`
+- `tests/unit/action-click.test.js`
+- `tests/unit/side-panel-behavior.test.js`
 - `tests/e2e/dashboard.spec.js`
 - `playwright.config.mjs`
 

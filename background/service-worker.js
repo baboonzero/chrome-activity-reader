@@ -14,6 +14,8 @@ import {
   updateSettings,
   upsertTabSnapshot
 } from "../shared/db.js";
+import { executeActionClick } from "./action-click.js";
+import { configureOpenOnActionClick } from "./side-panel-behavior.js";
 import { createSessionEngine } from "./session-engine.js";
 import { extractDomain, isExcludedDomain, isTrackableUrl, readableTitle } from "../shared/url.js";
 
@@ -28,7 +30,10 @@ const state = {
   paused: false,
   excludedDomains: [],
   retentionDays: 30,
-  theme: "dark"
+  theme: "dark",
+  openPanelOnActionClick: null,
+  lastActionClickResult: null,
+  lastOpenSidePanelResult: null
 };
 
 const sessionEngine = createSessionEngine({
@@ -326,19 +331,22 @@ async function openPanelForAllWindows() {
   }
 
   const windows = await chrome.windows.getAll({ populate: false });
+  let openedCount = 0;
+
   await Promise.all(
     windows
       .filter((windowEntry) => typeof windowEntry.id === "number")
       .map(async (windowEntry) => {
         try {
           await chrome.sidePanel.open({ windowId: windowEntry.id });
+          openedCount += 1;
         } catch {
           // Ignore non-supported window types or gesture mismatches.
         }
       })
   );
 
-  return true;
+  return openedCount > 0;
 }
 
 async function openPanelForWindow(windowId) {
@@ -355,17 +363,14 @@ async function openPanelForWindow(windowId) {
 }
 
 async function initializeSidePanelBehavior() {
-  if (!chrome.sidePanel?.setPanelBehavior) {
+  const result = await configureOpenOnActionClick(chrome.sidePanel?.setPanelBehavior?.bind(chrome.sidePanel));
+  state.openPanelOnActionClick = result.ok;
+
+  if (result.ok || result.reason === "not_supported") {
     return;
   }
 
-  try {
-    await chrome.sidePanel.setPanelBehavior({
-      openPanelOnActionClick: false
-    });
-  } catch (error) {
-    console.warn("Unable to configure side panel behavior", error);
-  }
+  console.warn("Unable to configure side panel behavior", result.error || result.reason);
 }
 
 async function initializeExtension(reason) {
@@ -396,32 +401,30 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.action.onClicked.addListener(() => {
-  // Keep icon-click predictable: open current window panel first, then best-effort global open.
-  chrome.windows
-    .getLastFocused()
-    .then(async (windowEntry) => {
-      const focusedWindowId = typeof windowEntry?.id === "number" ? windowEntry.id : null;
-      let opened = false;
-
-      if (focusedWindowId !== null) {
-        opened = await openPanelForWindow(focusedWindowId);
-      }
-
-      if (!opened) {
-        opened = await openPanelForAllWindows();
-      }
-
-      if (!opened) {
-        await chrome.tabs.create({ url: getDashboardUrl() });
-        return;
-      }
-
-      openPanelForAllWindows().catch(() => {
-        // Ignore follow-up global open failures.
-      });
+  executeActionClick({
+    getFocusedWindowId: async () => {
+      const windowEntry = await chrome.windows.getLastFocused();
+      return typeof windowEntry?.id === "number" ? windowEntry.id : null;
+    },
+    openPanelForWindow,
+    openPanelForAllWindows,
+    openDashboardTab: async () => chrome.tabs.create({ url: getDashboardUrl() })
+  })
+    .then((result) => {
+      state.lastActionClickResult = {
+        ...result,
+        source: "action-click",
+        at: Date.now()
+      };
     })
-    .catch(async () => {
-      await chrome.tabs.create({ url: getDashboardUrl() });
+    .catch((error) => {
+      state.lastActionClickResult = {
+        ok: false,
+        source: "action-click",
+        at: Date.now(),
+        error: String(error)
+      };
+      console.error("Failed to handle action click", error);
     });
 });
 
@@ -548,8 +551,45 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "open-side-panel") {
     openPanelForAllWindows()
-      .then(() => sendResponse({ ok: true }))
+      .then((opened) => {
+        state.lastOpenSidePanelResult = {
+          ok: opened,
+          opened,
+          at: Date.now()
+        };
+        sendResponse({ ok: opened, opened });
+      })
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message?.type === "debug-trigger-action-click") {
+    executeActionClick({
+      getFocusedWindowId: async () => {
+        const windowEntry = await chrome.windows.getLastFocused();
+        return typeof windowEntry?.id === "number" ? windowEntry.id : null;
+      },
+      openPanelForWindow,
+      openPanelForAllWindows,
+      openDashboardTab: async () => chrome.tabs.create({ url: getDashboardUrl() })
+    })
+      .then((result) => {
+        state.lastActionClickResult = {
+          ...result,
+          source: "debug-trigger-action-click",
+          at: Date.now()
+        };
+        sendResponse(result);
+      })
+      .catch((error) => {
+        state.lastActionClickResult = {
+          ok: false,
+          source: "debug-trigger-action-click",
+          at: Date.now(),
+          error: String(error)
+        };
+        sendResponse({ ok: false, error: String(error) });
+      });
     return true;
   }
 
@@ -562,7 +602,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       retentionDays: state.retentionDays,
       idleState: state.idleState,
       theme: state.theme,
-      meaningfulThresholdSec: FOCUS_MEANINGFUL_THRESHOLD_SEC
+      meaningfulThresholdSec: FOCUS_MEANINGFUL_THRESHOLD_SEC,
+      sidePanelApiAvailable: Boolean(chrome.sidePanel?.open),
+      openPanelOnActionClick: state.openPanelOnActionClick,
+      lastActionClickResult: state.lastActionClickResult,
+      lastOpenSidePanelResult: state.lastOpenSidePanelResult
     });
     return false;
   }
