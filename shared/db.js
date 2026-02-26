@@ -68,6 +68,31 @@ function transactionDonePromise(transaction) {
   });
 }
 
+function normalizeSettings(input) {
+  const rawRetentionDays = Number(input?.retentionDays);
+  const retentionDays = Number.isFinite(rawRetentionDays)
+    ? Math.max(1, Math.round(rawRetentionDays))
+    : DEFAULT_SETTINGS.retentionDays;
+
+  const paused = typeof input?.paused === "boolean" ? input.paused : DEFAULT_SETTINGS.paused;
+
+  const excludedDomainSet = new Set(
+    Array.isArray(input?.excludedDomains)
+      ? input.excludedDomains
+          .map((value) => String(value || "").trim().toLowerCase())
+          .filter(Boolean)
+      : [...DEFAULT_SETTINGS.excludedDomains]
+  );
+
+  const excludedDomains = [...excludedDomainSet];
+
+  return {
+    retentionDays,
+    paused,
+    excludedDomains
+  };
+}
+
 async function getSettingValueInternal(db, key) {
   const tx = db.transaction(STORE_SETTINGS, "readonly");
   const store = tx.objectStore(STORE_SETTINGS);
@@ -97,20 +122,20 @@ export async function getSettings() {
   const paused = await getSettingValueInternal(db, "paused");
   const excludedDomains = await getSettingValueInternal(db, "excludedDomains");
 
-  return {
-    retentionDays: typeof retentionDays === "number" ? retentionDays : DEFAULT_SETTINGS.retentionDays,
-    paused: typeof paused === "boolean" ? paused : DEFAULT_SETTINGS.paused,
-    excludedDomains: Array.isArray(excludedDomains) ? excludedDomains : [...DEFAULT_SETTINGS.excludedDomains]
-  };
+  return normalizeSettings({
+    retentionDays,
+    paused,
+    excludedDomains
+  });
 }
 
 export async function updateSettings(partialSettings) {
   const db = await openDatabase();
   const current = await getSettings();
-  const next = {
+  const next = normalizeSettings({
     ...current,
     ...partialSettings
-  };
+  });
 
   await putSettingValueInternal(db, "retentionDays", next.retentionDays);
   await putSettingValueInternal(db, "paused", next.paused);
@@ -132,11 +157,18 @@ export async function addSession(session) {
 }
 
 export async function listSessionsInRange(startAt, endAt) {
+  const safeStartAt = Math.min(Number(startAt), Number(endAt));
+  const safeEndAt = Math.max(Number(startAt), Number(endAt));
+
+  if (!Number.isFinite(safeStartAt) || !Number.isFinite(safeEndAt)) {
+    return [];
+  }
+
   const db = await openDatabase();
   const tx = db.transaction(STORE_SESSIONS, "readonly");
   const store = tx.objectStore(STORE_SESSIONS);
   const index = store.index("endAt");
-  const range = IDBKeyRange.lowerBound(startAt);
+  const range = IDBKeyRange.bound(safeStartAt, safeEndAt);
   const sessions = [];
 
   await new Promise((resolve, reject) => {
@@ -150,7 +182,7 @@ export async function listSessionsInRange(startAt, endAt) {
       }
 
       const value = cursor.value;
-      if (value.startAt <= endAt) {
+      if (value.startAt <= safeEndAt && value.endAt >= safeStartAt) {
         sessions.push(value);
       }
 
@@ -173,10 +205,15 @@ export async function upsertTabSnapshot(snapshot) {
 }
 
 export async function pruneSessionsOlderThan(cutoffTimestampMs) {
+  const cutoff = Number(cutoffTimestampMs);
+  if (!Number.isFinite(cutoff)) {
+    return 0;
+  }
+
   const db = await openDatabase();
   const tx = db.transaction(STORE_SESSIONS, "readwrite");
   const index = tx.objectStore(STORE_SESSIONS).index("endAt");
-  const range = IDBKeyRange.upperBound(cutoffTimestampMs, true);
+  const range = IDBKeyRange.upperBound(cutoff, true);
   let deletedCount = 0;
 
   await new Promise((resolve, reject) => {
@@ -199,4 +236,19 @@ export async function pruneSessionsOlderThan(cutoffTimestampMs) {
 
   await transactionDonePromise(tx);
   return deletedCount;
+}
+
+export async function __resetDatabaseForTests() {
+  if (!dbPromise) {
+    return;
+  }
+
+  try {
+    const db = await dbPromise;
+    db.close();
+  } catch {
+    // Ignore reset failures in tests.
+  } finally {
+    dbPromise = undefined;
+  }
 }

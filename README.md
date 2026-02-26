@@ -34,6 +34,15 @@ Chrome extension MVP that tracks tab-level activity and shows what you worked on
 3. Run end-to-end tests:
    - `npm run test:e2e`
 
+## Full Verification Loop
+
+- Run unit and E2E suites together:
+  - `npm run test:all`
+
+Includes:
+- Unit tests for session engine transitions and IndexedDB retention/query boundaries.
+- Playwright dashboard tests for timeline filters, focus/open behavior, and settings action.
+
 ## Notes
 
 - MVP tracks tab/window focus activity only.

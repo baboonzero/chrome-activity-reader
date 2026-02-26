@@ -184,3 +184,34 @@ test("supports range switching between 1h and 4h views", async ({ page }) => {
   await page.click('[data-range="4h"]');
   await expect(page.locator(".timeline-item")).toHaveCount(2);
 });
+
+test("opens url when matching tab is not currently open and supports settings action", async ({ page }) => {
+  const now = Date.now();
+  const sessions = [
+    makeSession({
+      id: "session-closed",
+      url: "https://example.com/closed",
+      title: "Closed tab",
+      domain: "example.com",
+      startAt: now - 15 * 60_000,
+      endAt: now - 12 * 60_000,
+      durationSec: 180
+    })
+  ];
+
+  await page.goto("/ui/dashboard.html");
+  await clearSessions(page);
+  await seedSessions(page, sessions);
+  await page.reload();
+
+  await page.evaluate(() => {
+    window.__queryResult = [];
+  });
+
+  await page.click(".timeline-item");
+  await page.click("#open-settings");
+
+  const calls = await page.evaluate(() => window.__calls);
+  expect(calls.some((item) => item.api === "tabs.create" && item.options?.url === "https://example.com/closed")).toBeTruthy();
+  expect(calls.some((item) => item.api === "runtime.openOptionsPage")).toBeTruthy();
+});
