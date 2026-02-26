@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrome Activity Reader</title>
+    <link rel="stylesheet" href="./dashboard.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <h1>Chrome Activity Reader</h1>
+          <p class="subtitle">See where your attention went and jump back fast.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="open-settings" type="button">Settings</button>
+        </div>
+      </header>
+
+      <section class="controls">
+        <div class="range-buttons" role="tablist" aria-label="Time range filters">
+          <button type="button" class="range-btn active" data-range="1h">Last 1h</button>
+          <button type="button" class="range-btn" data-range="4h">Last 4h</button>
+          <button type="button" class="range-btn" data-range="24h">Last 1d</button>
+          <button type="button" class="range-btn" data-range="168h">Last 7d</button>
+        </div>
+        <div class="search-wrap">
+          <label for="search">Search</label>
+          <input id="search" type="search" placeholder="Filter by title or domain" />
+        </div>
+      </section>
+
+      <section class="summary" id="summary">
+        <span id="summary-total">0 sessions</span>
+        <span id="summary-duration">0s total</span>
+      </section>
+
+      <section class="timeline-wrap">
+        <ul id="timeline" class="timeline"></ul>
+        <p id="empty" class="empty hidden">No activity found in this range.</p>
+      </section>
+    </main>
+    <script type="module" src="./dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrome Activity Reader Settings</title>
+    <link rel="stylesheet" href="./dashboard.css" />
+    <style>
+      .settings-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .row {
+        display: grid;
+        gap: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 160px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        resize: vertical;
+        font: inherit;
+      }
+
+      .inline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .hint {
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+
+      #save {
+        background: var(--accent);
+        color: white;
+        border-color: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <h1>Settings</h1>
+          <p class="subtitle">Control tracking scope and privacy behavior.</p>
+        </div>
+      </header>
+
+      <section class="settings-card">
+        <div class="row">
+          <div class="inline-row">
+            <input id="paused" type="checkbox" />
+            <label for="paused">Pause tracking</label>
+          </div>
+          <p class="hint">When enabled, no new activity sessions are recorded.</p>
+        </div>
+
+        <div class="row">
+          <label for="excluded-domains">Excluded domains (one per line)</label>
+          <textarea
+            id="excluded-domains"
+            placeholder="example.com&#10;mail.google.com&#10;internal.company.com"
+          ></textarea>
+          <p class="hint">
+            Any matching domain and subdomain will be excluded from tracking.
+          </p>
+        </div>
+
+        <div class="row">
+          <p class="hint">
+            Retention: <strong id="retention-days">30</strong> days (default).
+          </p>
+        </div>
+
+        <div class="actions">
+          <button id="save" type="button">Save Settings</button>
+          <button id="open-dashboard" type="button">Open Dashboard</button>
+        </div>
+
+        <p id="status" class="hint"></p>
+      </section>
+    </main>
+
+    <script type="module" src="./settings.js"></script>
+  </body>
+</html>

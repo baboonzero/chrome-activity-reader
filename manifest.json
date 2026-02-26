@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Activity Reader",
+  "description": "Track tab-level activity across Chrome windows and review what you worked on recently.",
+  "version": "0.1.0",
+  "permissions": [
+    "tabs",
+    "storage",
+    "idle",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Chrome Activity Reader"
+  },
+  "options_page": "ui/settings.html"
+}
