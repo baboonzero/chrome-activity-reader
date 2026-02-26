@@ -341,6 +341,19 @@ async function openPanelForAllWindows() {
   return true;
 }
 
+async function openPanelForWindow(windowId) {
+  if (!chrome.sidePanel?.open || typeof windowId !== "number") {
+    return false;
+  }
+
+  try {
+    await chrome.sidePanel.open({ windowId });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function initializeSidePanelBehavior() {
   if (!chrome.sidePanel?.setPanelBehavior) {
     return;
@@ -383,9 +396,33 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.action.onClicked.addListener(() => {
-  openPanelForAllWindows().catch((error) => {
-    console.error("Failed to open side panel", error);
-  });
+  // Keep icon-click predictable: open current window panel first, then best-effort global open.
+  chrome.windows
+    .getLastFocused()
+    .then(async (windowEntry) => {
+      const focusedWindowId = typeof windowEntry?.id === "number" ? windowEntry.id : null;
+      let opened = false;
+
+      if (focusedWindowId !== null) {
+        opened = await openPanelForWindow(focusedWindowId);
+      }
+
+      if (!opened) {
+        opened = await openPanelForAllWindows();
+      }
+
+      if (!opened) {
+        await chrome.tabs.create({ url: getDashboardUrl() });
+        return;
+      }
+
+      openPanelForAllWindows().catch(() => {
+        // Ignore follow-up global open failures.
+      });
+    })
+    .catch(async () => {
+      await chrome.tabs.create({ url: getDashboardUrl() });
+    });
 });
 
 chrome.tabs.onCreated.addListener((tab) => {
