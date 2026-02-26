@@ -54,6 +54,8 @@ For complete project history, architecture decisions, execution timeline, built/
   - `npm run test:all`
 - Run unpacked-extension smoke test in Chromium:
   - `npm run test:smoke:extension`
+- Run extension state-transition flow matrix (single + pairwise action sequences):
+  - `npm run test:flows:extension`
 - Run long-duration multi-window validation with artifact capture:
   - `npm run test:validate:long`
   - Optional headed mode:
@@ -64,6 +66,11 @@ For complete project history, architecture decisions, execution timeline, built/
 Includes:
 - Unit tests for session engine transitions, activity aggregation, and retention boundaries.
 - Playwright tests for meaningful/all/recent views, ranking, and focus/open behavior.
+- Real-extension flow-matrix checks for navigation/state transitions:
+  - `Dashboard -> Settings` same-tab navigation
+  - `Settings -> Dashboard` same-tab navigation
+  - `Open Side Panel` success from dashboard and settings
+  - Theme toggle and cross-surface theme sync
 - Timestamped screenshots and accessibility snapshots for long-run validation evidence.
 - Detailed evidence log:
   - `docs/testing/validation-evidence-2026-02-26.md`

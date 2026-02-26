@@ -49,6 +49,14 @@ function getSettingsUrl() {
   return chrome.runtime.getURL("ui/settings.html");
 }
 
+function getSenderWindowId(sender) {
+  return typeof sender?.tab?.windowId === "number" ? sender.tab.windowId : null;
+}
+
+function getSenderTabId(sender) {
+  return typeof sender?.tab?.id === "number" ? sender.tab.id : null;
+}
+
 function isTrackableTab(tab) {
   if (!tab || typeof tab.id !== "number" || typeof tab.windowId !== "number") {
     return false;
@@ -553,10 +561,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
 
-  if (message?.type === "open-settings") {
-    if (message.surface === "full" && typeof _sender?.tab?.id === "number") {
+  if (message?.type === "open-dashboard") {
+    const senderTabId = getSenderTabId(_sender);
+    if (senderTabId !== null) {
       chrome.tabs
-        .update(_sender.tab.id, { url: getSettingsUrl() })
+        .update(senderTabId, { url: getDashboardUrl() })
+        .then(() => sendResponse({ ok: true, mode: "same_tab" }))
+        .catch((error) => sendResponse({ ok: false, error: String(error) }));
+      return true;
+    }
+
+    chrome.tabs
+      .create({ url: getDashboardUrl() })
+      .then(() => sendResponse({ ok: true, mode: "new_tab" }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message?.type === "open-settings") {
+    const senderTabId = getSenderTabId(_sender);
+    if (message.surface === "full" && senderTabId !== null) {
+      chrome.tabs
+        .update(senderTabId, { url: getSettingsUrl() })
         .then(() => sendResponse({ ok: true, mode: "same_tab" }))
         .catch((error) => sendResponse({ ok: false, error: String(error) }));
       return true;
@@ -570,14 +596,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "open-side-panel") {
-    openPanelForAllWindows()
-      .then((opened) => {
+    const senderWindowId = getSenderWindowId(_sender);
+
+    (async () => {
+      let opened = false;
+      let mode = "failed";
+
+      if (senderWindowId !== null) {
+        opened = await openPanelForWindow(senderWindowId);
+        if (opened) {
+          mode = "sender_window";
+        }
+      }
+
+      if (!opened) {
+        opened = await openPanelForAllWindows();
+        if (opened) {
+          mode = "all_windows";
+        }
+      }
+
+      return { opened, mode, senderWindowId };
+    })()
+      .then((result) => {
         state.lastOpenSidePanelResult = {
-          ok: opened,
-          opened,
+          ok: result.opened,
+          opened: result.opened,
+          mode: result.mode,
+          senderWindowId: result.senderWindowId,
           at: Date.now()
         };
-        sendResponse({ ok: opened, opened });
+        sendResponse({
+          ok: result.opened,
+          opened: result.opened,
+          mode: result.mode,
+          senderWindowId: result.senderWindowId
+        });
       })
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;

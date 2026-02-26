@@ -29,7 +29,11 @@ function applyTheme(theme) {
 
 function renderStatus(message, isError = false) {
   statusElement.textContent = message;
-  statusElement.style.color = isError ? "#f7b267" : "";
+  if (isError) {
+    statusElement.style.color = "#f7b267";
+    return;
+  }
+  statusElement.style.color = "";
 }
 
 async function loadSettings() {
@@ -74,12 +78,28 @@ function bindEvents() {
     applyTheme(themeElement.value);
   });
 
-  openDashboardButton.addEventListener("click", () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("ui/dashboard.html") });
+  openDashboardButton.addEventListener("click", async () => {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "open-dashboard" });
+      if (!response?.ok) {
+        renderStatus("Failed to open dashboard.", true);
+      }
+    } catch (error) {
+      renderStatus(`Failed to open dashboard: ${String(error)}`, true);
+    }
   });
 
   openSidePanelButton.addEventListener("click", async () => {
-    await chrome.runtime.sendMessage({ type: "open-side-panel" });
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "open-side-panel" });
+      if (!response?.ok) {
+        renderStatus("Unable to open side panel from this context.", true);
+        return;
+      }
+      renderStatus("Side panel opened.");
+    } catch (error) {
+      renderStatus(`Failed to open side panel: ${String(error)}`, true);
+    }
   });
 }
 

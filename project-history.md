@@ -176,6 +176,16 @@ Chronological execution log:
       - e2e test for theme select contrast in dark/light
       - smoke assertions for same-tab settings routing and cross-page theme sync
 
+32. Fixed state-transition regressions and introduced transition-matrix flow testing:
+    - fixed `open-side-panel` runtime route to prefer sender window and then fallback to global-open
+    - fixed settings `Dashboard` action to route through runtime same-tab navigation
+    - added explicit settings-page e2e coverage (`tests/e2e/settings.spec.js`)
+    - added real-extension transition framework (`scripts/extension-flow-matrix-test.mjs`) with single-step + pairwise sequence validation
+    - expanded smoke assertions to verify:
+      - side-panel open success from dashboard and settings
+      - settings/dashboard round-trip in same tab
+      - unchanged tab count across round-trip sequence
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -189,6 +199,7 @@ Chronological execution log:
 7. **Default work view:** `Meaningful` (`focused time > 10s`) with toggles for `All tabs` and `Most recent`.
 8. **Theme policy:** Dark mode default with one shared setting across side panel/full dashboard.
 9. **Action-click reliability:** Enable native side-panel open-on-action-click and treat fallback-only behavior as a test smell.
+10. **Flow reliability:** Treat navigation/side-panel interactions as state transitions and test them with transition-matrix automation.
 
 ### Engineering Decisions
 
@@ -247,6 +258,7 @@ This delivered a runnable end-to-end MVP skeleton quickly.
 
 - Unit tests for session engine and DB boundaries.
 - Playwright E2E tests for timeline and action flows.
+- Real-extension transition-matrix tests for sequence coverage across dashboard/settings interactions.
 - Combined test command (`npm run test:all`).
 
 ### Tooling/Operations
@@ -287,6 +299,7 @@ Not in MVP (intentionally out of scope):
 - `npm run test:e2e`: passing
 - `npm run test:all`: passing
 - `npm run test:smoke:extension`: passing
+- `npm run test:flows:extension`: passing (`18/18` transition sequences)
 - Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
 - Action-click config check: passing (`sidePanelApiAvailable=true`, `openPanelOnActionClick=true`)
 
@@ -338,6 +351,7 @@ Primary commits:
 - `tests/unit/action-click.test.js`
 - `tests/unit/side-panel-behavior.test.js`
 - `tests/e2e/dashboard.spec.js`
+- `tests/e2e/settings.spec.js`
 - `playwright.config.mjs`
 
 ### Documentation and Planning
@@ -355,6 +369,7 @@ Primary commits:
 ### Operations
 
 - `.github/workflows/ci.yml`
+- `scripts/extension-flow-matrix-test.mjs`
 - `scripts/manual-acceptance.ps1`
 - `package.json`
 - `package-lock.json`
@@ -366,11 +381,13 @@ Primary commits:
    - `npm install`
 2. Run full test loop:
    - `npm run test:all`
-3. Load extension in Chrome:
+3. Run state-transition flow matrix:
+   - `npm run test:flows:extension`
+4. Load extension in Chrome:
    - `chrome://extensions` -> Load unpacked -> project root
-4. Run manual acceptance helper:
+5. Run manual acceptance helper:
    - `pwsh ./scripts/manual-acceptance.ps1 -RunAutomatedTests`
-5. Walk through checklist:
+6. Walk through checklist:
    - `docs/testing/manual-acceptance-checklist.md`
 
 ## 11. Summary

@@ -43,6 +43,13 @@ async function run() {
     const panelPage = await context.newPage();
     await panelPage.goto(panelUrl, { waitUntil: "domcontentloaded" });
     const panelViewCount = await panelPage.locator('[data-view]').count();
+    const initialPageCount = context.pages().length;
+
+    await dashboardPage.click("#open-side-panel");
+    await dashboardPage.waitForTimeout(250);
+    const runtimeAfterDashboardSidePanel = await dashboardPage.evaluate(async () =>
+      chrome.runtime.sendMessage({ type: "get-runtime-status" })
+    );
 
     await dashboardPage.click("#theme-toggle");
     await dashboardPage.waitForTimeout(250);
@@ -52,6 +59,21 @@ async function run() {
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
     const settingsHeading = await dashboardPage.textContent("h1");
     const settingsOpenedInCurrentTab = dashboardPage.url().endsWith("/ui/settings.html");
+    const pageCountAfterOpenSettings = context.pages().length;
+
+    await dashboardPage.click("#open-side-panel");
+    await dashboardPage.waitForTimeout(250);
+    const runtimeAfterSettingsSidePanel = await dashboardPage.evaluate(async () =>
+      chrome.runtime.sendMessage({ type: "get-runtime-status" })
+    );
+
+    await dashboardPage.click("#open-dashboard");
+    await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/dashboard.html"), { timeout: 5_000 });
+    const dashboardOpenedInCurrentTab = dashboardPage.url().endsWith("/ui/dashboard.html");
+    const pageCountAfterBackToDashboard = context.pages().length;
+
+    await dashboardPage.click("#open-settings");
+    await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
     const settingsTheme = await dashboardPage.getAttribute("body", "data-theme");
     const settingsThemeValue = await dashboardPage.inputValue("#theme");
     const themeSelectContrast = await dashboardPage.evaluate(() => {
@@ -102,8 +124,15 @@ async function run() {
       paused: status?.paused,
       sidePanelApiAvailable: status?.sidePanelApiAvailable,
       openPanelOnActionClick: status?.openPanelOnActionClick,
+      runtimeAfterDashboardSidePanel,
+      runtimeAfterSettingsSidePanel,
       settingsHeading,
       settingsOpenedInCurrentTab,
+      pageCountAfterOpenSettings,
+      dashboardOpenedInCurrentTab,
+      pageCountAfterBackToDashboard,
+      pageCountUnchangedOnSettingsRoundTrip:
+        pageCountAfterOpenSettings === initialPageCount && pageCountAfterBackToDashboard === initialPageCount,
       dashboardThemeAfterToggle,
       settingsTheme,
       settingsThemeValue,
@@ -122,7 +151,13 @@ async function run() {
       result.runtimeStatusOk !== true ||
       result.sidePanelApiAvailable !== true ||
       result.openPanelOnActionClick !== true ||
+      result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.ok !== true ||
+      !["sender_window", "all_windows"].includes(result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.mode) ||
+      result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.ok !== true ||
+      !["sender_window", "all_windows"].includes(result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.mode) ||
       result.settingsOpenedInCurrentTab !== true ||
+      result.dashboardOpenedInCurrentTab !== true ||
+      result.pageCountUnchangedOnSettingsRoundTrip !== true ||
       result.dashboardThemeAfterToggle !== "light" ||
       result.settingsTheme !== "light" ||
       result.settingsThemeValue !== "light" ||

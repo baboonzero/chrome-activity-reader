@@ -284,9 +284,16 @@ function bindEvents() {
 
   openSettingsButton?.addEventListener("click", () => {
     const surface = bodyElement.dataset.surface === "panel" ? "panel" : "full";
-    chrome.runtime.sendMessage({ type: "open-settings", surface }).catch((error) => {
-      console.error("Open settings failed", error);
-    });
+    chrome.runtime
+      .sendMessage({ type: "open-settings", surface })
+      .then((response) => {
+        if (!response?.ok) {
+          console.error("Open settings failed", response?.error || "unknown_error");
+        }
+      })
+      .catch((error) => {
+        console.error("Open settings failed", error);
+      });
   });
 
   expandDashboardButton?.addEventListener("click", async () => {
@@ -294,7 +301,14 @@ function bindEvents() {
   });
 
   openSidePanelButton?.addEventListener("click", async () => {
-    await chrome.runtime.sendMessage({ type: "open-side-panel" });
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "open-side-panel" });
+      if (!response?.ok) {
+        console.error("Open side panel failed", response?.error || response?.mode || "unknown_error");
+      }
+    } catch (error) {
+      console.error("Open side panel failed", error);
+    }
   });
 
   listElement.addEventListener("click", async (event) => {
