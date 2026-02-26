@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "Chrome Activity Reader",
   "description": "Track tab-level activity across Chrome windows and review what you worked on recently.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icons": {
-    "16": "assets/icons/icon-16.png",
-    "32": "assets/icons/icon-32.png",
-    "48": "assets/icons/icon-48.png",
-    "128": "assets/icons/icon-128.png"
+    "16": "assets/icons/icon-v2-16.png",
+    "32": "assets/icons/icon-v2-32.png",
+    "48": "assets/icons/icon-v2-48.png",
+    "128": "assets/icons/icon-v2-128.png"
   },
   "permissions": [
     "tabs",

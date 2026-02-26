@@ -29,6 +29,7 @@ async function run() {
 
     const dashboardPage = await context.newPage();
     await dashboardPage.goto(dashboardUrl, { waitUntil: "domcontentloaded" });
+    const dashboardFaviconHref = await dashboardPage.getAttribute('link[rel="icon"]', "href");
 
     const heading = await dashboardPage.textContent("h1");
     const activityListCount = await dashboardPage.locator("#activity-list").count();
@@ -59,6 +60,7 @@ async function run() {
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
     const settingsHeading = await dashboardPage.textContent("h1");
     const settingsOpenedInCurrentTab = dashboardPage.url().endsWith("/ui/settings.html");
+    const settingsFaviconHref = await dashboardPage.getAttribute('link[rel="icon"]', "href");
     const pageCountAfterOpenSettings = context.pages().length;
 
     await dashboardPage.click("#open-side-panel");
@@ -74,6 +76,13 @@ async function run() {
 
     await dashboardPage.click("#open-settings");
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
+    await dashboardPage.waitForFunction(
+      () =>
+        document.body?.dataset?.theme === "light" &&
+        document.querySelector("#theme")?.value === "light",
+      null,
+      { timeout: 5_000 }
+    );
     const settingsTheme = await dashboardPage.getAttribute("body", "data-theme");
     const settingsThemeValue = await dashboardPage.inputValue("#theme");
     const themeSelectContrast = await dashboardPage.evaluate(() => {
@@ -126,6 +135,8 @@ async function run() {
       openPanelOnActionClick: status?.openPanelOnActionClick,
       runtimeAfterDashboardSidePanel,
       runtimeAfterSettingsSidePanel,
+      dashboardFaviconHref,
+      settingsFaviconHref,
       settingsHeading,
       settingsOpenedInCurrentTab,
       pageCountAfterOpenSettings,
@@ -151,6 +162,8 @@ async function run() {
       result.runtimeStatusOk !== true ||
       result.sidePanelApiAvailable !== true ||
       result.openPanelOnActionClick !== true ||
+      !String(result.dashboardFaviconHref || "").includes("icon-v2-32.png") ||
+      !String(result.settingsFaviconHref || "").includes("icon-v2-32.png") ||
       result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.ok !== true ||
       !["sender_window", "all_windows"].includes(result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.mode) ||
       result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.ok !== true ||

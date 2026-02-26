@@ -186,6 +186,12 @@ Chronological execution log:
       - settings/dashboard round-trip in same tab
       - unchanged tab count across round-trip sequence
 
+33. Fixed favicon cache regression in extension tabs:
+    - introduced cache-busted icon asset set (`icon-v2-*`)
+    - updated manifest icons and bumped extension version to `0.1.1`
+    - updated dashboard/panel/settings favicon links and header icon references
+    - extended smoke assertions to require `icon-v2-32.png` favicon path in both dashboard and settings
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -331,6 +337,10 @@ Primary commits:
 - `assets/icons/icon-32.png`
 - `assets/icons/icon-48.png`
 - `assets/icons/icon-128.png`
+- `assets/icons/icon-v2-16.png`
+- `assets/icons/icon-v2-32.png`
+- `assets/icons/icon-v2-48.png`
+- `assets/icons/icon-v2-128.png`
 - `assets/fonts/space-grotesk-400.ttf`
 - `assets/fonts/space-grotesk-500.ttf`
 - `assets/fonts/space-grotesk-700.ttf`
