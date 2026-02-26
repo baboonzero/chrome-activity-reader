@@ -43,10 +43,17 @@ For complete project history, architecture decisions, execution timeline, built/
   - `npm run test:all`
 - Run unpacked-extension smoke test in Chromium:
   - `npm run test:smoke:extension`
+- Run long-duration multi-window validation with artifact capture:
+  - `npm run test:validate:long`
+  - Optional headed mode:
+    - PowerShell: `$env:VALIDATION_HEADED='1'; npm run test:validate:long`
+  - Optional duration override:
+    - PowerShell: `$env:VALIDATION_DURATION_MINUTES='10'; npm run test:validate:long`
 
 Includes:
 - Unit tests for session engine transitions and IndexedDB retention/query boundaries.
 - Playwright dashboard tests for timeline filters, focus/open behavior, and settings action.
+- Timestamped screenshots and accessibility snapshots for long-run validation evidence.
 
 ## Notes
 
