@@ -54,6 +54,21 @@ Includes:
 - Unit tests for session engine transitions and IndexedDB retention/query boundaries.
 - Playwright dashboard tests for timeline filters, focus/open behavior, and settings action.
 - Timestamped screenshots and accessibility snapshots for long-run validation evidence.
+- Detailed evidence log:
+  - `docs/testing/validation-evidence-2026-02-26.md`
+
+## agent-browser Snapshot Proof
+
+Example workflow (with explicit session name):
+
+```powershell
+agent-browser --session car open https://www.wikipedia.org
+agent-browser --session car snapshot -i
+agent-browser --session car screenshot ".\\artifacts\\agent-browser-proof.png" --full
+agent-browser --session car close
+```
+
+If `default` session fails to start on Windows, use a non-default `--session` name.
 
 ## Notes
 

@@ -103,6 +103,26 @@ Chronological execution log:
 
 16. Pushed final state to GitHub `main`.
 
+17. Installed and verified `agent-browser` skill/tooling for screenshot/snapshot-driven browser validation.
+
+18. Ran full verification loop again:
+    - `npm run test:all`
+    - `npm run test:smoke:extension`
+
+19. Executed headed long-duration multi-window validation:
+    - Run ID: `20260226-165807`
+    - Duration: 12 minutes
+    - Steps: 36
+    - Artifacts: screenshots + ARIA snapshots + JSON/markdown reports under `artifacts/validation/20260226-165807/`
+
+20. Executed direct `agent-browser` snapshot/screenshot proof flow:
+    - Non-default session workaround (`--session car`) due local default-session port conflict.
+    - Captured evidence screenshot:
+      - `artifacts/validation/20260226-165807/screenshots/agent-browser-wikipedia.png`
+
+21. Updated validation evidence document:
+    - `docs/testing/validation-evidence-2026-02-26.md`
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -192,6 +212,7 @@ Not in MVP (intentionally out of scope):
 - Automated tests: **green**
 - CI workflow: **configured**
 - Manual acceptance assets: **present**
+- Headed long-duration runtime validation with artifacts: **complete**
 - Repo pushed to GitHub: **yes**
 
 ### Quality Status
@@ -199,6 +220,8 @@ Not in MVP (intentionally out of scope):
 - `npm run test:unit`: passing
 - `npm run test:e2e`: passing
 - `npm run test:all`: passing
+- `npm run test:smoke:extension`: passing
+- Long-duration headed validation: passing (`runId=20260226-165807`, `timelineCount=10`, `retentionDays=30`)
 
 ### Branch/History Status
 
@@ -207,6 +230,9 @@ Primary commits:
 - `0f2e6fc` Build MV3 Chrome Activity Reader MVP scaffold
 - `b1db2c7` Add Playwright test loop for dashboard behavior
 - `4fb4594` Complete MVP hardening, recovery, and full test loop
+- `0b49afb` Add full project documentation, CI workflow, and acceptance checklist
+- `0a14196` Rename project history doc and add real extension smoke test
+- `c59d30f` Add long-duration extension validation with screenshot evidence
 
 ## 9. File-Level Map Of What Exists
 
@@ -271,5 +297,10 @@ This project has moved from concept to a tested MVP with:
 - hardening for service-worker lifecycle behavior,
 - automated and manual verification paths,
 - CI on GitHub.
+
+Latest verification cycle confirms:
+- all automated suites are green,
+- real extension runtime works in headed long-duration multi-window flow,
+- screenshot/snapshot evidence is recorded.
 
 The current codebase is production-ready for MVP-level internal use and ready for the next phase (publishing hardening, side panel UX, and optional richer activity intelligence).
