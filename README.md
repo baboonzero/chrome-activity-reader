@@ -3,7 +3,7 @@
 Chrome extension MVP that tracks tab-level activity and shows what you worked on over the last 1 hour, 4 hours, 1 day, and 7 days.
 
 For complete project history, architecture decisions, execution timeline, built/not-built scope, and current status, see:
-- `README.markdown`
+- `project-history.md`
 
 ## MVP Features
 
@@ -41,6 +41,8 @@ For complete project history, architecture decisions, execution timeline, built/
 
 - Run unit and E2E suites together:
   - `npm run test:all`
+- Run unpacked-extension smoke test in Chromium:
+  - `npm run test:smoke:extension`
 
 Includes:
 - Unit tests for session engine transitions and IndexedDB retention/query boundaries.

@@ -234,7 +234,7 @@ Primary commits:
 ### Documentation and Planning
 
 - `README.md` (quick start)
-- `README.markdown` (this full build document)
+- `project-history.md` (this full build document)
 - `docs/APPROACH_AND_PLAN.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-design.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-implementation-plan.md`
