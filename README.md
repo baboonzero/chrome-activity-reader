@@ -2,6 +2,9 @@
 
 Chrome extension MVP that tracks tab-level activity and shows what you worked on over the last 1 hour, 4 hours, 1 day, and 7 days.
 
+For complete project history, architecture decisions, execution timeline, built/not-built scope, and current status, see:
+- `README.markdown`
+
 ## MVP Features
 
 - Tracks active tab sessions across Chrome windows.
