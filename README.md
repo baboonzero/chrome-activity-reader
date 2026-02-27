@@ -4,6 +4,7 @@ Chrome extension that tracks all web tabs (`http/https`) and surfaces attention-
 
 For complete project history, architecture decisions, execution timeline, built/not-built scope, and current status, see:
 - `project-history.md`
+- `docs/INSTALLATION.md`
 
 ## Features
 
@@ -24,13 +25,38 @@ For complete project history, architecture decisions, execution timeline, built/
 - Retention defaults to 30 days.
 - Settings for pause tracking, excluded domains, and shared theme.
 
-## Load Extension (Developer Mode)
+## Download The Project
+
+Choose one option:
+
+1. **Download ZIP (no git required)**
+   - Open: `https://github.com/baboonzero/chrome-activity-reader`
+   - Click **Code** -> **Download ZIP**
+   - Extract ZIP to a local folder
+
+2. **Clone with git**
+   - `git clone https://github.com/baboonzero/chrome-activity-reader.git`
+   - `cd chrome-activity-reader`
+
+## Install In Chrome (Load Unpacked)
 
 1. Open `chrome://extensions`.
-2. Enable **Developer mode**.
+2. Enable **Developer mode** (top-right).
 3. Click **Load unpacked**.
-4. Select this project folder:
-   - `C:\Users\anshu\Downloads\AI Projects\Chrome Activity Reader`
+4. Select the project root folder (the folder that contains `manifest.json`).
+5. Confirm **Chrome Activity Reader** appears in your extension list.
+6. (Optional) Click the puzzle icon in Chrome toolbar and pin the extension for one-click access.
+
+## Update The Extension After New Commits
+
+If you cloned with git:
+- `git pull origin main`
+
+If you installed from ZIP:
+- Download and extract the latest ZIP again.
+
+Then in `chrome://extensions`:
+- Click **Reload** on Chrome Activity Reader.
 
 ## Use
 
@@ -38,6 +64,9 @@ For complete project history, architecture decisions, execution timeline, built/
 2. Use `Meaningful / All tabs` filters.
 3. Click `Expand` in side panel to open full dashboard tab.
 4. Open Options/Settings to manage privacy and theme.
+
+Detailed install and troubleshooting:
+- `docs/INSTALLATION.md`
 
 ## Test Loop (Playwright)
 

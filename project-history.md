@@ -1,6 +1,6 @@
 # Chrome Activity Reader - Complete Build Documentation
 
-Last updated: 2026-02-26
+Last updated: 2026-02-27
 Repository: https://github.com/baboonzero/chrome-activity-reader
 
 ## 1. Project Intent
@@ -213,6 +213,17 @@ Chronological execution log:
     - adjusted smoke validation to assert re-enable using deterministic close signal and runtime state checks
     - revalidated full suite (`test:all`, `test:smoke:extension`, `test:flows:extension`)
 
+37. Simplified view filtering by removing redundant `Most recent` mode:
+    - verified `All tabs` and `Most recent` had identical filter/sort behavior
+    - removed `Most recent` filter from dashboard and side panel UI
+    - updated E2E/smoke/long-validation scripts and docs to the two-filter model (`Meaningful`, `All tabs`)
+    - revalidated full suite (`test:all`, `test:smoke:extension`, `test:flows:extension`)
+
+38. Completed end-user installation documentation:
+    - expanded `README.md` with explicit GitHub download + install + update steps
+    - added dedicated guide: `docs/INSTALLATION.md`
+    - updated project documentation status and validation references
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -315,6 +326,7 @@ Not in MVP (intentionally out of scope):
 - Automated tests: **green**
 - CI workflow: **configured**
 - Manual acceptance assets: **present**
+- End-user installation guide: **present**
 - Headed long-duration runtime validation with artifacts: **complete**
 - Side panel + all-tab model rollout: **complete**
 - Repo pushed to GitHub: **yes**
@@ -329,6 +341,7 @@ Not in MVP (intentionally out of scope):
 - Cross-surface live theme sync check: passing (`dashboard->panel`, `panel->dashboard/settings`)
 - Side-panel-open guard check: passing (`disabled while open`, `re-enabled after close`)
 - Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
+- Runtime sanity long-validation: passing (`runId=20260227-125812`, `allTabsCount=9`, `retentionDays=30`, `theme=dark`)
 - Action-click config check: passing (`sidePanelApiAvailable=true`, `openPanelOnActionClick=true`)
 
 ### Branch/History Status
@@ -342,6 +355,7 @@ Primary commits:
 - `0a14196` Rename project history doc and add real extension smoke test
 - `c59d30f` Add long-duration extension validation with screenshot evidence
 - `6ac346b` Document headed long-run validation and agent-browser evidence
+- `5ba01b2` Remove redundant Most recent view filter
 
 ## 9. File-Level Map Of What Exists
 
@@ -390,6 +404,7 @@ Primary commits:
 
 - `README.md` (quick start)
 - `project-history.md` (this full build document)
+- `docs/INSTALLATION.md`
 - `docs/APPROACH_AND_PLAN.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-design.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-implementation-plan.md`
@@ -415,8 +430,8 @@ Primary commits:
    - `npm run test:all`
 3. Run state-transition flow matrix:
    - `npm run test:flows:extension`
-4. Load extension in Chrome:
-   - `chrome://extensions` -> Load unpacked -> project root
+4. Download and install extension:
+   - `docs/INSTALLATION.md`
 5. Run manual acceptance helper:
    - `pwsh ./scripts/manual-acceptance.ps1 -RunAutomatedTests`
 6. Walk through checklist:
