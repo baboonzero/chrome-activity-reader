@@ -13,7 +13,6 @@ For complete project history, architecture decisions, execution timeline, built/
 - View filters:
   - `Meaningful` (default): focused time `> 10s`
   - `All tabs`: includes `never focused` entries
-  - `Most recent`: recency-first ordering
 - Time range filters: `1h`, `4h`, `24h`, `7d`
 - Global side panel UI (dark mode default) with:
   - Search
@@ -36,7 +35,7 @@ For complete project history, architecture decisions, execution timeline, built/
 ## Use
 
 1. Click extension icon to open the side panel.
-2. Use `Meaningful / All tabs / Most recent` filters.
+2. Use `Meaningful / All tabs` filters.
 3. Click `Expand` in side panel to open full dashboard tab.
 4. Open Options/Settings to manage privacy and theme.
 
@@ -66,7 +65,7 @@ For complete project history, architecture decisions, execution timeline, built/
 
 Includes:
 - Unit tests for session engine transitions, activity aggregation, and retention boundaries.
-- Playwright tests for meaningful/all/recent views, ranking, and focus/open behavior.
+- Playwright tests for meaningful/all views, ranking, and focus/open behavior.
 - Real-extension flow-matrix checks for navigation/state transitions:
   - `Dashboard -> Settings` same-tab navigation
   - `Settings -> Dashboard` same-tab navigation

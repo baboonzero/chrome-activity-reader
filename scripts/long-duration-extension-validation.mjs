@@ -246,13 +246,6 @@ async function run() {
       fullPage: true
     });
 
-    await dashboardPage.click('[data-view="recent"]');
-    await dashboardPage.waitForTimeout(300);
-    await dashboardPage.screenshot({
-      path: path.join(screenshotsDir, "99-dashboard-final-recent-7d.png"),
-      fullPage: true
-    });
-
     const finalSummary = await dashboardPage.evaluate(async (settingsPageUrl) => {
       const clickView = async (view) => {
         const button = document.querySelector(`[data-view="${view}"]`);
@@ -271,14 +264,12 @@ async function run() {
 
       const meaningful = await clickView("meaningful");
       const allTabs = await clickView("all");
-      const recent = await clickView("recent");
       const runtime = await chrome.runtime.sendMessage({ type: "get-runtime-status" });
       const browserTabs = await chrome.tabs.query({});
 
       return {
         meaningful,
         allTabs,
-        recent,
         runtime,
         allTabCount: browserTabs.length,
         settingsPageUrl
@@ -317,8 +308,6 @@ async function run() {
       `- All tabs total: ${finalSummary.allTabs.summaryTotal}`,
       `- All tabs duration: ${finalSummary.allTabs.summaryDuration}`,
       `- All tabs never-focused: ${finalSummary.allTabs.summaryNeverFocused}`,
-      `- Most recent count (7d): ${finalSummary.recent.count}`,
-      `- Most recent total: ${finalSummary.recent.summaryTotal}`,
       `- Runtime status OK: ${Boolean(finalSummary.runtime?.ok)}`,
       `- Runtime paused: ${String(finalSummary.runtime?.paused)}`,
       `- Runtime retentionDays: ${String(finalSummary.runtime?.retentionDays)}`,

@@ -155,7 +155,7 @@ Chronological execution log:
     - Run ID: `20260226-191647`
     - Artifacts: `artifacts/validation/20260226-191647/`
 
-29. Enhanced validation loop to capture end-state screenshots and metrics for all view filters (`Meaningful`, `All tabs`, `Most recent`), then reran headed validation:
+29. Enhanced validation loop to capture end-state screenshots and metrics for all view filters available at that time (`Meaningful`, `All tabs`, `Most recent`), then reran headed validation:
     - Run ID: `20260226-192909`
     - All tabs proof: `count=6`, `never-focused=4`
     - Artifacts: `artifacts/validation/20260226-192909/`
@@ -223,7 +223,7 @@ Chronological execution log:
 4. **Retention default:** 30 days.
 5. **Privacy stance:** Local-only storage; no cloud sync in MVP.
 6. **UI model:** Global side panel + full dashboard + settings.
-7. **Default work view:** `Meaningful` (`focused time > 10s`) with toggles for `All tabs` and `Most recent`.
+7. **Default work view:** `Meaningful` (`focused time > 10s`) with toggle for `All tabs`.
 8. **Theme policy:** Dark mode default with one shared setting across side panel/full dashboard.
 9. **Action-click reliability:** Enable native side-panel open-on-action-click and treat fallback-only behavior as a test smell.
 10. **Flow reliability:** Treat navigation/side-panel interactions as state transitions and test them with transition-matrix automation.
@@ -260,7 +260,6 @@ This delivered a runnable end-to-end MVP skeleton quickly.
 - Filtered activity views:
   - `Meaningful` (default, focused time >10s)
   - `All tabs` (includes `never focused`)
-  - `Most recent` (recency-first)
 - Time filters:
   - 1h / 4h / 1d / 7d
 - Search by title/domain/url.
@@ -428,7 +427,7 @@ Primary commits:
 This project has moved from concept to a tested, upgraded MVP with:
 - all-tab web activity capture plus focused-time aggregation,
 - side panel and full-dashboard workflows,
-- meaningful/all/recent filtering model,
+- meaningful/all filtering model,
 - dark-first themed UI with shared theme settings,
 - privacy-first local storage,
 - automated and manual verification paths,

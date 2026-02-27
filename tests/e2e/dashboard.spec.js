@@ -214,7 +214,7 @@ test("all tabs view includes never-focused and focuses existing tab", async ({ p
   expect(calls.some((item) => item.api === "tabs.update")).toBeTruthy();
 });
 
-test("most recent view handles navigation actions and routes settings through runtime", async ({ page }) => {
+test("all tabs view handles navigation actions and routes settings through runtime", async ({ page }) => {
   const now = Date.now();
   const activities = [
     makeActivity({
@@ -236,7 +236,7 @@ test("most recent view handles navigation actions and routes settings through ru
     window.__queryResult = [];
   });
 
-  await page.click('[data-view="recent"]');
+  await page.click('[data-view="all"]');
   await page.click(".activity-button");
   await page.click("#open-settings");
   await page.click("#open-side-panel");

@@ -39,12 +39,10 @@ Expected:
 4. In panel/dashboard, switch between:
    - `Meaningful`
    - `All tabs`
-   - `Most recent`
 
 Expected:
 - `Meaningful` only shows entries with focused time >10s.
 - `All tabs` includes `never focused` entries.
-- `Most recent` orders newest activity first.
 
 ## 5. Range + Search
 
@@ -109,6 +107,6 @@ Accepted when all are true:
 - Side panel workflow behaves as designed.
 - All-tab tracking includes `never focused` entries.
 - Meaningful filter threshold (`>10s`) works.
-- Most recent filter and range controls work.
+- Meaningful/all view filters and range controls work.
 - Theme synchronization works across views.
 - Automated tests pass (`npm run test:all` and `npm run test:smoke:extension`).

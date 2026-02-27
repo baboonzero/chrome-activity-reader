@@ -205,7 +205,7 @@ async function run() {
       result.dashboardHeading !== "Chrome Activity Reader" ||
       !result.activityListPresent ||
       !result.defaultViewActive ||
-      result.panelViewToggleCount < 3 ||
+      result.panelViewToggleCount < 2 ||
       !result.actionClickSimulation?.ok ||
       !["panel_focused_window", "panel_all_windows", "dashboard_fallback"].includes(result.actionClickSimulation?.mode) ||
       result.runtimeStatusOk !== true ||

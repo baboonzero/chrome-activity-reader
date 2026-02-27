@@ -8,7 +8,7 @@ This evidence corresponds to the updated build with:
 
 - all-web-tab lifecycle tracking
 - focused-time aggregation
-- `Meaningful / All tabs / Most recent` filters
+- `Meaningful / All tabs / Most recent` filters (historical at run time; `Most recent` was later removed as redundant)
 - side panel + expand-to-full dashboard flow
 - shared dark/light theme setting (dark default)
 
