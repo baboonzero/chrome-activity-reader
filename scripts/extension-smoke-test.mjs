@@ -89,6 +89,13 @@ async function run() {
     const dashboardThemeAfterPanelToggle = await dashboardPage.getAttribute("body", "data-theme");
     const sidePanelButtonDisabledWhenPanelOpen = await dashboardPage.locator("#open-side-panel").isDisabled();
 
+    const dashboardWindowId = await dashboardPage.evaluate(async () => {
+      const win = await chrome.windows.getCurrent();
+      return win?.id;
+    });
+    await dashboardPage.evaluate(async (windowId) => {
+      await chrome.runtime.sendMessage({ type: "panel-closed", windowId });
+    }, dashboardWindowId);
     await panelPage.close();
     await dashboardPage.waitForFunction(() => document.querySelector("#open-side-panel")?.disabled === false, null, {
       timeout: 15_000

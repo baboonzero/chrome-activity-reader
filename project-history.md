@@ -208,6 +208,11 @@ Chronological execution log:
       - e2e button disable/re-enable coverage in dashboard spec
       - smoke assertions for disabled-while-open and enabled-after-close behavior
 
+36. Hardened side-panel close detection after user regression report:
+    - improved panel close emission with `visibilitychange` + `pagehide` + `beforeunload` handling
+    - adjusted smoke validation to assert re-enable using deterministic close signal and runtime state checks
+    - revalidated full suite (`test:all`, `test:smoke:extension`, `test:flows:extension`)
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions

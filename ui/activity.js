@@ -139,11 +139,30 @@ function startPanelHeartbeat() {
     }
   };
 
-  sendPanelHeartbeat().catch(() => {});
-  panelHeartbeatTimerId = setInterval(() => {
-    sendPanelHeartbeat().catch(() => {});
-  }, 3_000);
+  const resumePanelOpenState = () => {
+    if (document.visibilityState === "hidden") {
+      return;
+    }
 
+    panelCloseNotified = false;
+    sendPanelHeartbeat().catch(() => {});
+
+    if (!panelHeartbeatTimerId) {
+      panelHeartbeatTimerId = setInterval(() => {
+        sendPanelHeartbeat().catch(() => {});
+      }, 3_000);
+    }
+  };
+
+  resumePanelOpenState();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      notifyPanelClosed();
+      return;
+    }
+    resumePanelOpenState();
+  });
   window.addEventListener("pagehide", notifyPanelClosed);
   window.addEventListener("beforeunload", notifyPanelClosed);
 }
