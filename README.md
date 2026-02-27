@@ -19,6 +19,7 @@ For complete project history, architecture decisions, execution timeline, built/
   - Search
   - Theme toggle (shared with full dashboard, live sync across open views)
   - `Expand` to full dashboard tab
+  - Full-dashboard `Open Side Panel` button auto-disables while panel is already open in that window
 - Click any entry to focus an existing tab or open it if already closed.
 - Local-only storage (IndexedDB), no cloud sync.
 - Retention defaults to 30 days.

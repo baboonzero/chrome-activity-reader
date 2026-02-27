@@ -211,6 +211,12 @@ body[data-surface="panel"] .hero-actions {
   border-color: var(--accent);
 }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+}
+
 .btn.primary {
   color: white;
   border-color: transparent;

@@ -48,8 +48,12 @@ async function run() {
     const panelThemeInitial = await panelPage.getAttribute("body", "data-theme");
     const initialPageCount = context.pages().length;
 
-    await dashboardPage.click("#open-side-panel");
-    await dashboardPage.waitForTimeout(250);
+    const dashboardSidePanelButton = dashboardPage.locator("#open-side-panel");
+    const canRequestDashboardSidePanelOpen = await dashboardSidePanelButton.isEnabled();
+    if (canRequestDashboardSidePanelOpen) {
+      await dashboardPage.click("#open-side-panel");
+      await dashboardPage.waitForTimeout(250);
+    }
     const runtimeAfterDashboardSidePanel = await dashboardPage.evaluate(async () =>
       chrome.runtime.sendMessage({ type: "get-runtime-status" })
     );
@@ -83,6 +87,13 @@ async function run() {
     const panelThemeAfterPanelToggle = await panelPage.getAttribute("body", "data-theme");
     await dashboardPage.waitForFunction(() => document.body?.dataset?.theme === "dark", null, { timeout: 5_000 });
     const dashboardThemeAfterPanelToggle = await dashboardPage.getAttribute("body", "data-theme");
+    const sidePanelButtonDisabledWhenPanelOpen = await dashboardPage.locator("#open-side-panel").isDisabled();
+
+    await panelPage.close();
+    await dashboardPage.waitForFunction(() => document.querySelector("#open-side-panel")?.disabled === false, null, {
+      timeout: 15_000
+    });
+    const sidePanelButtonEnabledAfterPanelClose = !(await dashboardPage.locator("#open-side-panel").isDisabled());
 
     await dashboardPage.click("#open-settings");
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
@@ -148,6 +159,8 @@ async function run() {
       panelThemeAfterDashboardToggle,
       panelThemeAfterPanelToggle,
       dashboardThemeAfterPanelToggle,
+      sidePanelButtonDisabledWhenPanelOpen,
+      sidePanelButtonEnabledAfterPanelClose,
       runtimeAfterDashboardSidePanel,
       runtimeAfterSettingsSidePanel,
       dashboardFaviconHref,
@@ -167,6 +180,20 @@ async function run() {
 
     console.log(JSON.stringify(result, null, 2));
 
+    const dashboardSidePanelRuntimeValid =
+      result.runtimeAfterDashboardSidePanel?.sidePanelOpenForWindow === true &&
+      (
+        !result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult ||
+        (
+          result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.ok === true &&
+          ["sender_window", "all_windows"].includes(result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.mode)
+        )
+      );
+
+    const settingsSidePanelRuntimeValid =
+      result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.ok === true &&
+      ["sender_window", "all_windows"].includes(result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.mode);
+
     if (
       result.dashboardHeading !== "Chrome Activity Reader" ||
       !result.activityListPresent ||
@@ -179,10 +206,8 @@ async function run() {
       result.openPanelOnActionClick !== true ||
       !String(result.dashboardFaviconHref || "").includes("icon-v2-32.png") ||
       !String(result.settingsFaviconHref || "").includes("icon-v2-32.png") ||
-      result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.ok !== true ||
-      !["sender_window", "all_windows"].includes(result.runtimeAfterDashboardSidePanel?.lastOpenSidePanelResult?.mode) ||
-      result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.ok !== true ||
-      !["sender_window", "all_windows"].includes(result.runtimeAfterSettingsSidePanel?.lastOpenSidePanelResult?.mode) ||
+      dashboardSidePanelRuntimeValid !== true ||
+      settingsSidePanelRuntimeValid !== true ||
       result.settingsOpenedInCurrentTab !== true ||
       result.dashboardOpenedInCurrentTab !== true ||
       result.pageCountUnchangedOnSettingsRoundTrip !== true ||
@@ -192,6 +217,8 @@ async function run() {
       result.panelThemeAfterDashboardToggle !== "light" ||
       result.panelThemeAfterPanelToggle !== "dark" ||
       result.dashboardThemeAfterPanelToggle !== "dark" ||
+      result.sidePanelButtonDisabledWhenPanelOpen !== true ||
+      result.sidePanelButtonEnabledAfterPanelClose !== true ||
       result.settingsTheme !== "dark" ||
       result.settingsThemeValue !== "dark" ||
       Number(result.themeSelectContrast || 0) < 4.5 ||

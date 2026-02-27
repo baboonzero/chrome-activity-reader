@@ -23,6 +23,7 @@ const CLEANUP_ALARM = "retention-cleanup";
 const CLEANUP_INTERVAL_MINUTES = 360;
 const RUNTIME_STORAGE_KEY = "runtime_state_v2";
 const FOCUS_MEANINGFUL_THRESHOLD_SEC = 10;
+const PANEL_HEARTBEAT_TTL_MS = 10_000;
 
 const state = {
   focusedWindowId: chrome.windows.WINDOW_ID_NONE,
@@ -33,7 +34,8 @@ const state = {
   theme: "dark",
   openPanelOnActionClick: null,
   lastActionClickResult: null,
-  lastOpenSidePanelResult: null
+  lastOpenSidePanelResult: null,
+  panelHeartbeatByWindow: {}
 };
 
 const sessionEngine = createSessionEngine({
@@ -53,6 +55,64 @@ function broadcastTheme(theme) {
   chrome.runtime.sendMessage({ type: "theme-changed", theme }).catch(() => {
     // Ignore when no extension page is listening.
   });
+}
+
+function broadcastSidePanelState(windowId, isOpen) {
+  chrome.runtime.sendMessage({ type: "side-panel-state-changed", windowId, isOpen }).catch(() => {
+    // Ignore when no extension page is listening.
+  });
+}
+
+function prunePanelHeartbeats(now = Date.now()) {
+  for (const [windowIdRaw, lastSeenAtRaw] of Object.entries(state.panelHeartbeatByWindow)) {
+    const windowId = Number(windowIdRaw);
+    const lastSeenAt = Number(lastSeenAtRaw);
+    if (!Number.isFinite(windowId) || !Number.isFinite(lastSeenAt) || now - lastSeenAt > PANEL_HEARTBEAT_TTL_MS) {
+      delete state.panelHeartbeatByWindow[windowIdRaw];
+    }
+  }
+}
+
+function registerPanelHeartbeat(windowId, at = Date.now()) {
+  if (typeof windowId !== "number") {
+    return false;
+  }
+
+  const key = String(windowId);
+  const wasOpen = key in state.panelHeartbeatByWindow;
+  state.panelHeartbeatByWindow[key] = at;
+  if (!wasOpen) {
+    broadcastSidePanelState(windowId, true);
+  }
+  return true;
+}
+
+function markPanelClosed(windowId) {
+  if (typeof windowId !== "number") {
+    return false;
+  }
+
+  const key = String(windowId);
+  const wasOpen = key in state.panelHeartbeatByWindow;
+  delete state.panelHeartbeatByWindow[key];
+  if (wasOpen) {
+    broadcastSidePanelState(windowId, false);
+  }
+  return wasOpen;
+}
+
+function isPanelOpenForWindow(windowId, now = Date.now()) {
+  prunePanelHeartbeats(now);
+  if (typeof windowId !== "number") {
+    return false;
+  }
+
+  const lastSeenAt = Number(state.panelHeartbeatByWindow[String(windowId)]);
+  if (!Number.isFinite(lastSeenAt)) {
+    return false;
+  }
+
+  return now - lastSeenAt <= PANEL_HEARTBEAT_TTL_MS;
 }
 
 function getSenderWindowId(sender) {
@@ -331,6 +391,7 @@ async function runRetentionCleanup() {
   const cutoffTimestampMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
   await pruneSessionsOlderThan(cutoffTimestampMs);
   await pruneTabActivitiesOlderThan(cutoffTimestampMs);
+  prunePanelHeartbeats();
 
   const snapshots = await listTabSnapshots();
   await Promise.all(
@@ -627,6 +688,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return { opened, mode, senderWindowId };
     })()
       .then((result) => {
+        if (result.opened && typeof result.senderWindowId === "number") {
+          registerPanelHeartbeat(result.senderWindowId);
+        }
+
         state.lastOpenSidePanelResult = {
           ok: result.opened,
           opened: result.opened,
@@ -643,6 +708,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       })
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
+  }
+
+  if (message?.type === "panel-heartbeat") {
+    const windowId = typeof message?.windowId === "number" ? message.windowId : getSenderWindowId(_sender);
+    const ok = registerPanelHeartbeat(windowId);
+    sendResponse({ ok, windowId });
+    return false;
+  }
+
+  if (message?.type === "panel-closed") {
+    const windowId = typeof message?.windowId === "number" ? message.windowId : getSenderWindowId(_sender);
+    const closed = markPanelClosed(windowId);
+    sendResponse({ ok: true, windowId, closed });
+    return false;
   }
 
   if (message?.type === "debug-trigger-action-click") {
@@ -676,6 +755,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "get-runtime-status") {
+    const senderWindowId = getSenderWindowId(_sender);
+    const requestedWindowId = typeof message?.windowId === "number" ? message.windowId : senderWindowId;
+    const sidePanelOpenForWindow = isPanelOpenForWindow(requestedWindowId);
+
     const runtimeState = sessionEngine.readState();
     sendResponse({
       ok: true,
@@ -688,7 +771,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sidePanelApiAvailable: Boolean(chrome.sidePanel?.open),
       openPanelOnActionClick: state.openPanelOnActionClick,
       lastActionClickResult: state.lastActionClickResult,
-      lastOpenSidePanelResult: state.lastOpenSidePanelResult
+      lastOpenSidePanelResult: state.lastOpenSidePanelResult,
+      sidePanelOpenForWindow,
+      sidePanelWindowId: requestedWindowId
     });
     return false;
   }

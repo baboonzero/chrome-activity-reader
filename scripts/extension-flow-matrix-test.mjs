@@ -81,14 +81,25 @@ async function transitionOpenDashboard({ page, context }) {
 }
 
 async function transitionOpenSidePanel({ page }) {
-  await page.click("#open-side-panel");
-  await page.waitForTimeout(250);
+  const button = page.locator("#open-side-panel");
+  const isDisabled = await button.isDisabled();
+  if (!isDisabled) {
+    await page.click("#open-side-panel");
+    await page.waitForTimeout(250);
+  }
+
   const runtime = await runtimeStatus(page);
   const result = runtime?.lastOpenSidePanelResult;
+
+  if (isDisabled) {
+    invariant(runtime?.sidePanelOpenForWindow === true, "open-side-panel disabled without an open side panel", {
+      runtime
+    });
+    return;
+  }
+
   invariant(result?.ok === true, "open-side-panel did not report success", { runtime });
-  invariant(["sender_window", "all_windows"].includes(result?.mode), "unexpected open-side-panel mode", {
-    mode: result?.mode
-  });
+  invariant(["sender_window", "all_windows"].includes(result?.mode), "unexpected open-side-panel mode", { mode: result?.mode });
 }
 
 async function transitionToggleTheme({ page }) {

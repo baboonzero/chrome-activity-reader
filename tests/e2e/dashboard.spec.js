@@ -71,7 +71,13 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.__queryResult = [];
     window.__calls = [];
-    window.__runtimeMessageListener = null;
+    window.__runtimeMessageListeners = [];
+    window.__runtimeStatus = {
+      ok: true,
+      meaningfulThresholdSec: 10,
+      theme: "dark",
+      sidePanelOpenForWindow: false
+    };
 
     window.chrome = {
       tabs: {
@@ -86,6 +92,7 @@ test.beforeEach(async ({ page }) => {
         }
       },
       windows: {
+        getCurrent: async () => ({ id: 1 }),
         update: async (windowId, options) => {
           window.__calls.push({ api: "windows.update", windowId, options });
           return {};
@@ -98,16 +105,21 @@ test.beforeEach(async ({ page }) => {
         },
         onMessage: {
           addListener: (listener) => {
-            window.__runtimeMessageListener = listener;
+            window.__runtimeMessageListeners.push(listener);
           }
         },
         sendMessage: async (message) => {
           window.__calls.push({ api: "runtime.sendMessage", message });
           if (message?.type === "get-runtime-status") {
-            return { ok: true, meaningfulThresholdSec: 10, theme: "dark" };
+            return { ...window.__runtimeStatus };
           }
           if (message?.type === "set-theme") {
+            window.__runtimeStatus.theme = message.theme;
             return { ok: true, theme: message.theme };
+          }
+          if (message?.type === "open-side-panel") {
+            window.__runtimeStatus.sidePanelOpenForWindow = true;
+            return { ok: true, mode: "sender_window" };
           }
           return { ok: true };
         },
@@ -298,10 +310,56 @@ test("dashboard applies broadcast theme updates from runtime", async ({ page }) 
   await expect(page.locator("body")).toHaveAttribute("data-theme", "dark");
 
   await page.evaluate(() => {
-    if (typeof window.__runtimeMessageListener === "function") {
-      window.__runtimeMessageListener({ type: "theme-changed", theme: "light" }, {}, () => {});
+    if (Array.isArray(window.__runtimeMessageListeners)) {
+      for (const listener of window.__runtimeMessageListeners) {
+        listener({ type: "theme-changed", theme: "light" }, {}, () => {});
+      }
     }
   });
 
   await expect(page.locator("body")).toHaveAttribute("data-theme", "light");
+});
+
+test("open side panel button is disabled when side panel is already open for this window", async ({ page }) => {
+  await page.goto("/ui/dashboard.html");
+
+  await page.evaluate(() => {
+    window.__runtimeStatus.sidePanelOpenForWindow = true;
+    if (Array.isArray(window.__runtimeMessageListeners)) {
+      for (const listener of window.__runtimeMessageListeners) {
+        listener({ type: "side-panel-state-changed", windowId: 1, isOpen: true }, {}, () => {});
+      }
+    }
+  });
+
+  const openSidePanelButton = page.locator("#open-side-panel");
+  await expect(openSidePanelButton).toBeDisabled();
+  await expect(openSidePanelButton).toHaveText("Side Panel Open");
+});
+
+test("open side panel button re-enables when runtime reports panel closed", async ({ page }) => {
+  await page.goto("/ui/dashboard.html");
+
+  await page.evaluate(() => {
+    window.__runtimeStatus.sidePanelOpenForWindow = true;
+    if (Array.isArray(window.__runtimeMessageListeners)) {
+      for (const listener of window.__runtimeMessageListeners) {
+        listener({ type: "side-panel-state-changed", windowId: 1, isOpen: true }, {}, () => {});
+      }
+    }
+  });
+
+  const openSidePanelButton = page.locator("#open-side-panel");
+  await expect(openSidePanelButton).toBeDisabled();
+
+  await page.evaluate(() => {
+    if (Array.isArray(window.__runtimeMessageListeners)) {
+      for (const listener of window.__runtimeMessageListeners) {
+        listener({ type: "side-panel-state-changed", windowId: 1, isOpen: false }, {}, () => {});
+      }
+    }
+  });
+
+  await expect(openSidePanelButton).toBeEnabled();
+  await expect(openSidePanelButton).toHaveText("Open Side Panel");
 });

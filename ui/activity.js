@@ -15,6 +15,8 @@ const state = {
   selectedRange: "1h",
   searchTerm: "",
   theme: "dark",
+  currentWindowId: null,
+  sidePanelOpenForWindow: false,
   meaningfulThresholdSec: 10,
   allActivities: [],
   visibleActivities: []
@@ -31,6 +33,8 @@ const openSettingsButton = document.querySelector("#open-settings");
 const expandDashboardButton = document.querySelector("#expand-dashboard");
 const openSidePanelButton = document.querySelector("#open-side-panel");
 const themeToggleButton = document.querySelector("#theme-toggle");
+let panelHeartbeatTimerId = null;
+let panelCloseNotified = false;
 
 function normalize(input) {
   return String(input || "").trim().toLowerCase();
@@ -68,6 +72,82 @@ function applyTheme(theme) {
   bodyElement.dataset.theme = state.theme;
 }
 
+function setSidePanelButtonDisabled(disabled) {
+  if (!openSidePanelButton) {
+    return;
+  }
+
+  const isDisabled = Boolean(disabled);
+  state.sidePanelOpenForWindow = isDisabled;
+  openSidePanelButton.disabled = isDisabled;
+  openSidePanelButton.textContent = isDisabled ? "Side Panel Open" : "Open Side Panel";
+}
+
+async function getCurrentWindowId() {
+  if (typeof state.currentWindowId === "number") {
+    return state.currentWindowId;
+  }
+
+  try {
+    const windowEntry = await chrome.windows.getCurrent();
+    if (typeof windowEntry?.id === "number") {
+      state.currentWindowId = windowEntry.id;
+      return state.currentWindowId;
+    }
+  } catch {
+    // Ignore unavailable window context.
+  }
+
+  return null;
+}
+
+async function sendPanelHeartbeat() {
+  if (bodyElement.dataset.surface !== "panel") {
+    return;
+  }
+
+  const windowId = await getCurrentWindowId();
+  if (typeof windowId !== "number") {
+    return;
+  }
+
+  try {
+    await chrome.runtime.sendMessage({ type: "panel-heartbeat", windowId });
+  } catch {
+    // Ignore heartbeat transport failures.
+  }
+}
+
+function startPanelHeartbeat() {
+  if (bodyElement.dataset.surface !== "panel") {
+    return;
+  }
+
+  const notifyPanelClosed = () => {
+    if (panelCloseNotified) {
+      return;
+    }
+    panelCloseNotified = true;
+
+    const windowId = state.currentWindowId;
+    if (typeof windowId === "number") {
+      chrome.runtime.sendMessage({ type: "panel-closed", windowId }).catch(() => {});
+    }
+    if (panelHeartbeatTimerId) {
+      clearInterval(panelHeartbeatTimerId);
+      panelHeartbeatTimerId = null;
+    }
+  };
+
+  sendPanelHeartbeat().catch(() => {});
+  panelHeartbeatTimerId = setInterval(() => {
+    sendPanelHeartbeat().catch(() => {});
+  }, 3_000);
+
+  window.addEventListener("pagehide", notifyPanelClosed);
+  window.addEventListener("beforeunload", notifyPanelClosed);
+}
+
 async function toggleTheme() {
   const nextTheme = state.theme === "dark" ? "light" : "dark";
   try {
@@ -85,6 +165,30 @@ async function toggleTheme() {
   }
 
   applyTheme(nextTheme);
+}
+
+async function refreshRuntimeStatus() {
+  try {
+    const windowId = await getCurrentWindowId();
+    const runtime = await chrome.runtime.sendMessage({
+      type: "get-runtime-status",
+      windowId
+    });
+
+    if (!runtime?.ok) {
+      return;
+    }
+
+    state.meaningfulThresholdSec = Number(runtime.meaningfulThresholdSec) || 10;
+    if (runtime.theme) {
+      applyTheme(runtime.theme);
+    }
+    if (typeof runtime.sidePanelOpenForWindow === "boolean") {
+      setSidePanelButtonDisabled(runtime.sidePanelOpenForWindow);
+    }
+  } catch {
+    // Ignore runtime status refresh failures.
+  }
 }
 
 function updateSummary(activities) {
@@ -301,11 +405,17 @@ function bindEvents() {
   });
 
   openSidePanelButton?.addEventListener("click", async () => {
+    if (openSidePanelButton.disabled) {
+      return;
+    }
+
     try {
       const response = await chrome.runtime.sendMessage({ type: "open-side-panel" });
       if (!response?.ok) {
         console.error("Open side panel failed", response?.error || response?.mode || "unknown_error");
+        return;
       }
+      setSidePanelButtonDisabled(true);
     } catch (error) {
       console.error("Open side panel failed", error);
     }
@@ -330,22 +440,23 @@ function bindRuntimeListeners() {
   chrome.runtime?.onMessage?.addListener?.((message) => {
     if (message?.type === "theme-changed") {
       applyTheme(message.theme);
+      return;
+    }
+
+    if (message?.type === "side-panel-state-changed") {
+      if (typeof message?.windowId === "number" && typeof state.currentWindowId === "number") {
+        if (message.windowId === state.currentWindowId) {
+          setSidePanelButtonDisabled(Boolean(message.isOpen));
+        }
+      } else {
+        refreshRuntimeStatus().catch(() => {});
+      }
     }
   });
 }
 
 async function bootstrapRuntimeSettings() {
-  try {
-    const runtime = await chrome.runtime.sendMessage({ type: "get-runtime-status" });
-    if (runtime?.ok) {
-      state.meaningfulThresholdSec = Number(runtime.meaningfulThresholdSec) || 10;
-      if (runtime.theme) {
-        applyTheme(runtime.theme);
-      }
-    }
-  } catch {
-    // Ignore runtime bootstrap failures.
-  }
+  await refreshRuntimeStatus();
 
   const settings = await getSettings();
   applyTheme(settings.theme || "dark");
@@ -359,15 +470,17 @@ function startAutoRefresh() {
   }
 
   refreshTimerId = setInterval(() => {
-    loadActivities().catch((error) => {
+    Promise.all([loadActivities(), refreshRuntimeStatus()]).catch((error) => {
       console.error("Auto refresh failed", error);
     });
   }, REFRESH_INTERVAL_MS);
 }
 
 async function initialize() {
+  await getCurrentWindowId();
   await bootstrapRuntimeSettings();
   bindRuntimeListeners();
+  startPanelHeartbeat();
   bindEvents();
   await loadActivities();
   startAutoRefresh();

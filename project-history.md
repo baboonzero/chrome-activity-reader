@@ -200,6 +200,14 @@ Chronological execution log:
       - e2e runtime broadcast tests for dashboard and settings
       - smoke assertions for two-way live sync (`dashboard -> panel` and `panel -> dashboard/settings`)
 
+35. Added side-panel-open state guard for full dashboard action:
+    - introduced panel heartbeat + close signaling (`panel-heartbeat`, `panel-closed`) from side panel UI
+    - service worker now tracks window-scoped side-panel-open state with heartbeat TTL
+    - full dashboard `Open Side Panel` button now disables while panel is open in that window and re-enables after close/expiry
+    - expanded tests:
+      - e2e button disable/re-enable coverage in dashboard spec
+      - smoke assertions for disabled-while-open and enabled-after-close behavior
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -315,6 +323,7 @@ Not in MVP (intentionally out of scope):
 - `npm run test:smoke:extension`: passing
 - `npm run test:flows:extension`: passing (`18/18` transition sequences)
 - Cross-surface live theme sync check: passing (`dashboard->panel`, `panel->dashboard/settings`)
+- Side-panel-open guard check: passing (`disabled while open`, `re-enabled after close`)
 - Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
 - Action-click config check: passing (`sidePanelApiAvailable=true`, `openPanelOnActionClick=true`)
 
