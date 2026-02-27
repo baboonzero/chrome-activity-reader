@@ -192,6 +192,14 @@ Chronological execution log:
     - updated dashboard/panel/settings favicon links and header icon references
     - extended smoke assertions to require `icon-v2-32.png` favicon path in both dashboard and settings
 
+34. Fixed cross-surface live theme sync regression:
+    - added runtime theme broadcast (`theme-changed`) from service worker on `set-theme` and `settings-updated`
+    - added listeners in dashboard/panel and settings pages to apply incoming theme updates live
+    - synchronized settings dropdown value with runtime theme updates
+    - expanded tests:
+      - e2e runtime broadcast tests for dashboard and settings
+      - smoke assertions for two-way live sync (`dashboard -> panel` and `panel -> dashboard/settings`)
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -306,6 +314,7 @@ Not in MVP (intentionally out of scope):
 - `npm run test:all`: passing
 - `npm run test:smoke:extension`: passing
 - `npm run test:flows:extension`: passing (`18/18` transition sequences)
+- Cross-surface live theme sync check: passing (`dashboard->panel`, `panel->dashboard/settings`)
 - Long-duration headed validation: passing (`runId=20260226-192909`, `allTabsCount=6`, `neverFocused=4`, `retentionDays=30`, `theme=dark`)
 - Action-click config check: passing (`sidePanelApiAvailable=true`, `openPanelOnActionClick=true`)
 

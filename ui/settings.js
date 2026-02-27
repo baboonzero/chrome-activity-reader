@@ -27,6 +27,12 @@ function applyTheme(theme) {
   document.body.dataset.theme = theme === "light" ? "light" : "dark";
 }
 
+function syncThemeUi(theme) {
+  const normalized = theme === "light" ? "light" : "dark";
+  applyTheme(normalized);
+  themeElement.value = normalized;
+}
+
 function renderStatus(message, isError = false) {
   statusElement.textContent = message;
   if (isError) {
@@ -41,8 +47,7 @@ async function loadSettings() {
   pausedElement.checked = Boolean(settings.paused);
   excludedDomainsElement.value = (settings.excludedDomains || []).join("\n");
   retentionDaysElement.textContent = String(settings.retentionDays || DEFAULT_SETTINGS.retentionDays);
-  themeElement.value = settings.theme || DEFAULT_SETTINGS.theme;
-  applyTheme(themeElement.value);
+  syncThemeUi(settings.theme || DEFAULT_SETTINGS.theme);
 }
 
 async function saveSettings() {
@@ -103,8 +108,17 @@ function bindEvents() {
   });
 }
 
+function bindRuntimeListeners() {
+  chrome.runtime?.onMessage?.addListener?.((message) => {
+    if (message?.type === "theme-changed") {
+      syncThemeUi(message.theme);
+    }
+  });
+}
+
 async function initialize() {
   await loadSettings();
+  bindRuntimeListeners();
   bindEvents();
 }
 

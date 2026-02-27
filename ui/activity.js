@@ -326,6 +326,14 @@ function bindEvents() {
   });
 }
 
+function bindRuntimeListeners() {
+  chrome.runtime?.onMessage?.addListener?.((message) => {
+    if (message?.type === "theme-changed") {
+      applyTheme(message.theme);
+    }
+  });
+}
+
 async function bootstrapRuntimeSettings() {
   try {
     const runtime = await chrome.runtime.sendMessage({ type: "get-runtime-status" });
@@ -359,6 +367,7 @@ function startAutoRefresh() {
 
 async function initialize() {
   await bootstrapRuntimeSettings();
+  bindRuntimeListeners();
   bindEvents();
   await loadActivities();
   startAutoRefresh();

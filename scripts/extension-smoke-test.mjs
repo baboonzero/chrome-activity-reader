@@ -30,6 +30,7 @@ async function run() {
     const dashboardPage = await context.newPage();
     await dashboardPage.goto(dashboardUrl, { waitUntil: "domcontentloaded" });
     const dashboardFaviconHref = await dashboardPage.getAttribute('link[rel="icon"]', "href");
+    const dashboardThemeInitial = await dashboardPage.getAttribute("body", "data-theme");
 
     const heading = await dashboardPage.textContent("h1");
     const activityListCount = await dashboardPage.locator("#activity-list").count();
@@ -44,6 +45,7 @@ async function run() {
     const panelPage = await context.newPage();
     await panelPage.goto(panelUrl, { waitUntil: "domcontentloaded" });
     const panelViewCount = await panelPage.locator('[data-view]').count();
+    const panelThemeInitial = await panelPage.getAttribute("body", "data-theme");
     const initialPageCount = context.pages().length;
 
     await dashboardPage.click("#open-side-panel");
@@ -55,6 +57,8 @@ async function run() {
     await dashboardPage.click("#theme-toggle");
     await dashboardPage.waitForTimeout(250);
     const dashboardThemeAfterToggle = await dashboardPage.getAttribute("body", "data-theme");
+    await panelPage.waitForFunction(() => document.body?.dataset?.theme === "light", null, { timeout: 5_000 });
+    const panelThemeAfterDashboardToggle = await panelPage.getAttribute("body", "data-theme");
 
     await dashboardPage.click("#open-settings");
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
@@ -74,12 +78,18 @@ async function run() {
     const dashboardOpenedInCurrentTab = dashboardPage.url().endsWith("/ui/dashboard.html");
     const pageCountAfterBackToDashboard = context.pages().length;
 
+    await panelPage.click("#theme-toggle");
+    await panelPage.waitForTimeout(250);
+    const panelThemeAfterPanelToggle = await panelPage.getAttribute("body", "data-theme");
+    await dashboardPage.waitForFunction(() => document.body?.dataset?.theme === "dark", null, { timeout: 5_000 });
+    const dashboardThemeAfterPanelToggle = await dashboardPage.getAttribute("body", "data-theme");
+
     await dashboardPage.click("#open-settings");
     await dashboardPage.waitForURL((url) => url.toString().endsWith("/ui/settings.html"), { timeout: 5_000 });
     await dashboardPage.waitForFunction(
       () =>
-        document.body?.dataset?.theme === "light" &&
-        document.querySelector("#theme")?.value === "light",
+        document.body?.dataset?.theme === "dark" &&
+        document.querySelector("#theme")?.value === "dark",
       null,
       { timeout: 5_000 }
     );
@@ -133,6 +143,11 @@ async function run() {
       paused: status?.paused,
       sidePanelApiAvailable: status?.sidePanelApiAvailable,
       openPanelOnActionClick: status?.openPanelOnActionClick,
+      dashboardThemeInitial,
+      panelThemeInitial,
+      panelThemeAfterDashboardToggle,
+      panelThemeAfterPanelToggle,
+      dashboardThemeAfterPanelToggle,
       runtimeAfterDashboardSidePanel,
       runtimeAfterSettingsSidePanel,
       dashboardFaviconHref,
@@ -171,9 +186,14 @@ async function run() {
       result.settingsOpenedInCurrentTab !== true ||
       result.dashboardOpenedInCurrentTab !== true ||
       result.pageCountUnchangedOnSettingsRoundTrip !== true ||
+      result.dashboardThemeInitial !== "dark" ||
+      result.panelThemeInitial !== "dark" ||
       result.dashboardThemeAfterToggle !== "light" ||
-      result.settingsTheme !== "light" ||
-      result.settingsThemeValue !== "light" ||
+      result.panelThemeAfterDashboardToggle !== "light" ||
+      result.panelThemeAfterPanelToggle !== "dark" ||
+      result.dashboardThemeAfterPanelToggle !== "dark" ||
+      result.settingsTheme !== "dark" ||
+      result.settingsThemeValue !== "dark" ||
       Number(result.themeSelectContrast || 0) < 4.5 ||
       result.settingsHeading !== "Settings"
     ) {

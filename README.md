@@ -17,7 +17,7 @@ For complete project history, architecture decisions, execution timeline, built/
 - Time range filters: `1h`, `4h`, `24h`, `7d`
 - Global side panel UI (dark mode default) with:
   - Search
-  - Theme toggle (shared with full dashboard)
+  - Theme toggle (shared with full dashboard, live sync across open views)
   - `Expand` to full dashboard tab
 - Click any entry to focus an existing tab or open it if already closed.
 - Local-only storage (IndexedDB), no cloud sync.

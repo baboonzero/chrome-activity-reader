@@ -71,6 +71,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.__queryResult = [];
     window.__calls = [];
+    window.__runtimeMessageListener = null;
 
     window.chrome = {
       tabs: {
@@ -94,6 +95,11 @@ test.beforeEach(async ({ page }) => {
         openOptionsPage: async () => {
           window.__calls.push({ api: "runtime.openOptionsPage" });
           return {};
+        },
+        onMessage: {
+          addListener: (listener) => {
+            window.__runtimeMessageListener = listener;
+          }
         },
         sendMessage: async (message) => {
           window.__calls.push({ api: "runtime.sendMessage", message });
@@ -285,4 +291,17 @@ test("settings theme select maintains readable contrast in dark and light modes"
 
   expect(contrastRatios.darkRatio).toBeGreaterThanOrEqual(4.5);
   expect(contrastRatios.lightRatio).toBeGreaterThanOrEqual(4.5);
+});
+
+test("dashboard applies broadcast theme updates from runtime", async ({ page }) => {
+  await page.goto("/ui/dashboard.html");
+  await expect(page.locator("body")).toHaveAttribute("data-theme", "dark");
+
+  await page.evaluate(() => {
+    if (typeof window.__runtimeMessageListener === "function") {
+      window.__runtimeMessageListener({ type: "theme-changed", theme: "light" }, {}, () => {});
+    }
+  });
+
+  await expect(page.locator("body")).toHaveAttribute("data-theme", "light");
 });

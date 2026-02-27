@@ -49,6 +49,12 @@ function getSettingsUrl() {
   return chrome.runtime.getURL("ui/settings.html");
 }
 
+function broadcastTheme(theme) {
+  chrome.runtime.sendMessage({ type: "theme-changed", theme }).catch(() => {
+    // Ignore when no extension page is listening.
+  });
+}
+
 function getSenderWindowId(sender) {
   return typeof sender?.tab?.windowId === "number" ? sender.tab.windowId : null;
 }
@@ -536,6 +542,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         } else {
           await syncCurrentActiveContext("settings_updated");
         }
+        broadcastTheme(state.theme);
         sendResponse({ ok: true });
       })
       .catch((error) => {
@@ -549,6 +556,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     updateSettings({ theme: message.theme })
       .then(async (settings) => {
         state.theme = settings.theme;
+        broadcastTheme(settings.theme);
         sendResponse({ ok: true, theme: settings.theme });
       })
       .catch((error) => sendResponse({ ok: false, error: String(error) }));

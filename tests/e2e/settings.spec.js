@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
       "open-side-panel": { ok: true, mode: "sender_window" },
       "settings-updated": { ok: true }
     };
+    window.__runtimeMessageListener = null;
 
     window.chrome = {
       tabs: {
@@ -17,6 +18,11 @@ test.beforeEach(async ({ page }) => {
         }
       },
       runtime: {
+        onMessage: {
+          addListener: (listener) => {
+            window.__runtimeMessageListener = listener;
+          }
+        },
         sendMessage: async (message) => {
           window.__calls.push({ api: "runtime.sendMessage", message });
           const type = message?.type;
@@ -65,4 +71,19 @@ test("settings side panel action shows success status when opened", async ({ pag
 
   await page.click("#open-side-panel");
   await expect(page.locator("#status")).toHaveText("Side panel opened.");
+});
+
+test("settings page applies broadcast theme updates and syncs dropdown value", async ({ page }) => {
+  await page.goto("/ui/settings.html");
+  await expect(page.locator("body")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("#theme")).toHaveValue("dark");
+
+  await page.evaluate(() => {
+    if (typeof window.__runtimeMessageListener === "function") {
+      window.__runtimeMessageListener({ type: "theme-changed", theme: "light" }, {}, () => {});
+    }
+  });
+
+  await expect(page.locator("body")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("#theme")).toHaveValue("light");
 });
