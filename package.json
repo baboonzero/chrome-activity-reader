@@ -13,9 +13,16 @@
     "test:validate:long": "node scripts/long-duration-extension-validation.mjs",
     "test:all": "npm run test:unit && npm run test:e2e"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "chrome-extension",
+    "mv3",
+    "tab-tracking",
+    "activity-tracker",
+    "productivity",
+    "playwright"
+  ],
+  "author": "Baboonzero",
+  "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "fake-indexeddb": "^6.2.5",

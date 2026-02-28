@@ -5,6 +5,7 @@ Chrome extension that tracks all web tabs (`http/https`) and surfaces attention-
 For complete project history, architecture decisions, execution timeline, built/not-built scope, and current status, see:
 - `project-history.md`
 - `docs/INSTALLATION.md`
+- `docs/GITHUB_METADATA.md`
 
 ## Features
 
@@ -121,3 +122,11 @@ If `default` session fails to start on Windows, use a non-default `--session` na
 
 - Tracking scope is web tabs only (`http/https`), not `chrome://` or extension pages.
 - No content-script capture of in-page click/typing/scroll behavior.
+
+## License
+
+MIT - see `LICENSE`.
+
+## Contributing
+
+See `CONTRIBUTING.md`.

@@ -224,6 +224,17 @@ Chronological execution log:
     - added dedicated guide: `docs/INSTALLATION.md`
     - updated project documentation status and validation references
 
+39. Added open-source licensing and GitHub collaboration polish:
+    - added MIT license (`LICENSE`)
+    - aligned package metadata to MIT in `package.json`
+    - added GitHub metadata guidance (`docs/GITHUB_METADATA.md`) with description/topics
+    - added contribution/collaboration scaffolding:
+      - `CONTRIBUTING.md`
+      - `.github/pull_request_template.md`
+      - `.github/ISSUE_TEMPLATE/bug_report.yml`
+      - `.github/ISSUE_TEMPLATE/feature_request.yml`
+      - `.github/ISSUE_TEMPLATE/config.yml`
+
 ## 4. What Were The Decisions That We Took?
 
 ### Product/Architecture Decisions
@@ -327,6 +338,8 @@ Not in MVP (intentionally out of scope):
 - CI workflow: **configured**
 - Manual acceptance assets: **present**
 - End-user installation guide: **present**
+- Open-source license (MIT): **present**
+- GitHub collaboration templates: **present**
 - Headed long-duration runtime validation with artifacts: **complete**
 - Side panel + all-tab model rollout: **complete**
 - Repo pushed to GitHub: **yes**
@@ -356,6 +369,7 @@ Primary commits:
 - `c59d30f` Add long-duration extension validation with screenshot evidence
 - `6ac346b` Document headed long-run validation and agent-browser evidence
 - `5ba01b2` Remove redundant Most recent view filter
+- `c6935f3` Complete docs and add clear extension install guide
 
 ## 9. File-Level Map Of What Exists
 
@@ -405,6 +419,8 @@ Primary commits:
 - `README.md` (quick start)
 - `project-history.md` (this full build document)
 - `docs/INSTALLATION.md`
+- `docs/GITHUB_METADATA.md`
+- `CONTRIBUTING.md`
 - `docs/APPROACH_AND_PLAN.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-design.md`
 - `docs/plans/2026-02-26-chrome-activity-reader-implementation-plan.md`
@@ -416,6 +432,10 @@ Primary commits:
 ### Operations
 
 - `.github/workflows/ci.yml`
+- `.github/pull_request_template.md`
+- `.github/ISSUE_TEMPLATE/bug_report.yml`
+- `.github/ISSUE_TEMPLATE/feature_request.yml`
+- `.github/ISSUE_TEMPLATE/config.yml`
 - `scripts/extension-flow-matrix-test.mjs`
 - `scripts/manual-acceptance.ps1`
 - `package.json`
