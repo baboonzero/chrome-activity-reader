@@ -126,7 +126,4 @@ If `default` session fails to start on Windows, use a non-default `--session` na
 ## License
 
 MIT - see `LICENSE`.
-
-## Contributing
-
-See `CONTRIBUTING.md`.
+Created by Anshumani Ruddra.
